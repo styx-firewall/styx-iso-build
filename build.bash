@@ -1,151 +1,218 @@
 #!/bin/bash
+# version 0.2
+set -e
 
-# Script para crear una ISO personalizada de Debian Bookworm
-# Requiere permisos de root para ejecutarse correctamente
-
-# Verificar si se está ejecutando como root
 if [ "$(id -u)" -ne 0 ]; then
     echo "Este script debe ejecutarse como root"
     exit 1
 fi
 
+# Configuración
+STYX_VERSION="0.1"
+ISO_NAME="debian-12.11.0-amd64-netinst.iso"
+ISO_URL="https://cdimage.debian.org/debian-cd/current/amd64/iso-cd/${ISO_NAME}"
+
+CUSTOM_ISO_NAME="styx-firewall-${STYX_VERSION}.iso"
+WORK_DIR="/tmp/netinst-custom"
+STYX_GPG_KEY="https://styx-firewall.github.io/styx-repo/styx-firewall-keyring.gpg"
+STYX_SOURCES_LIST="https://styx-firewall.github.io/styx-repo/styx.list"
+
 # Instalar dependencias necesarias
 echo "Instalando dependencias necesarias..."
 apt-get update
-apt-get install -y xorriso isolinux wget syslinux-utils squashfs-tools
+apt-get install -y xorriso isolinux wget syslinux-utils
 
-# Configuración
-STYX_VERSION="0.1"
-ISO_URL="https://cdimage.debian.org/cdimage/release/current/amd64/iso-cd/debian-12.11.0-amd64-netinst.iso"
-ISO_NAME="debian-12.11.0-amd64-netinst.iso"
-CUSTOM_ISO_NAME="styx-firewall-${STYX_VERSION}-custom.iso"
-WORK_DIR="/tmp/debian-iso-custom"
-MOUNT_DIR="${WORK_DIR}/mount"
-EXTRACT_DIR="${WORK_DIR}/extract"
-EDIT_DIR="${WORK_DIR}/edit"
+# Limpieza y preparación
+rm -rf "$WORK_DIR/extracted"
+#rm -rf "$WORK_DIR"
+mkdir -p "$WORK_DIR"
+cp styx-postinst.sh "$WORK_DIR/"
+cd "$WORK_DIR" || exit 1
 
-# URLs del repositorio STYX (añadido)
-STYX_GPG_KEY="https://styx-firewall.github.io/styx-repo/KEY.gpg"
-STYX_SOURCES_LIST="https://styx-firewall.github.io/styx-repo/styx.list"
-
-# Paquetes para añadir (modifica según tus necesidades)
-ADD_PACKAGES="linux-image-6.12.32-10-styx linux-headers-6.12.32-10-styx net-tools"
-# Paquetes para quitar (modifica según tus necesidades)
-REMOVE_PACKAGES="linux-image-amd64 linux-headers-amd64"
-
-
-
-# Crear directorios de trabajo
-echo "Creando directorios de trabajo..."
-rm -rf "${WORK_DIR}"
-mkdir -p "${MOUNT_DIR}" "${EXTRACT_DIR}" "${EDIT_DIR}"
-
-# Descargar ISO oficial si no existe
-if [ ! -f "${ISO_NAME}" ]; then
-    echo "Descargando ISO oficial de Debian ${STYX_VERSION}..."
-    wget "${ISO_URL}" -O "${ISO_NAME}"
-else
-    echo "Usando ISO existente: ${ISO_NAME}"
+# 1. Descargar ISO netinst
+if [ ! -f "$ISO_NAME" ]; then
+  wget -c "$ISO_URL" -O "$ISO_NAME"
 fi
 
-# Montar la ISO original
-echo "Montando la ISO original..."
-mount -o loop "${ISO_NAME}" "${MOUNT_DIR}"
+# 2. Extraer contenido ISO
+xorriso -osirrox on -indev "$ISO_NAME" -extract / extracted
 
-# Copiar contenido de la ISO al directorio de extracción
-echo "Copiando contenido de la ISO..."
-cp -r "${MOUNT_DIR}/." "${EXTRACT_DIR}/"
+# PostInstall Script
+mkdir -p extracted/extra/
+cp ./styx-postinst.sh extracted/extra/
+chmod +x extracted/extra/styx-postinst.sh
 
-# Desmontar la ISO
-echo "Desmontando la ISO..."
-umount "${MOUNT_DIR}"
+# 3. Preparar preseed.cfg para instalación automática
+cat > extracted/preseed.cfg <<EOF
 
-# Copiar contenido al directorio de edición
-echo "Preparando sistema de archivos para modificación..."
-rsync -a "${EXTRACT_DIR}/" "${EDIT_DIR}/"
+# Early commands
+# Allow admin user to be created
+d-i preseed/early_command string \
+    mkdir -p /target/etc && \
+    sed -i '/^admin$/d' /target/etc/adduser.conf;
 
-# Montar el sistema de archivos squashfs
-echo "Montando filesystem.squashfs..."
-unsquashfs -f -d "${EDIT_DIR}/squashfs-root" "${EDIT_DIR}/install.amd/squashfs-root/filesystem.squashfs"
+# Configuración de red
+d-i netcfg/choose_interface select auto
+d-i netcfg/get_hostname string styx
+d-i netcfg/get_domain string styx.local
 
-# Montar los directorios necesarios para chroot
-echo "Montando directorios especiales para chroot..."
-mount --bind /dev "${EDIT_DIR}/squashfs-root/dev"
-mount -t proc proc "${EDIT_DIR}/squashfs-root/proc"
-mount -t sysfs sys "${EDIT_DIR}/squashfs-root/sys"
+# Particionamiento (ajustar según necesidades)
+d-i partman-auto/method string regular
+d-i partman-auto/choose_recipe select atomic
+d-i partman-partitioning/confirm_write_new_label boolean true
+d-i partman/choose_partition select finish
+d-i partman/confirm boolean true
+d-i partman/confirm_nooverwrite boolean true
 
-# Configurar DNS para el entorno chroot
-echo "Configurando DNS para chroot..."
-cp /etc/resolv.conf "${EDIT_DIR}/squashfs-root/etc/resolv.conf"
+# Configuración de usuario
+#d-i passwd/root-login boolean false
+#d-i passwd/make-user boolean true  
+d-i passwd/allow-badname boolean true
+d-i user-setup/allow-password-weak boolean true  
+d-i passwd/user-fullname string admin
+d-i passwd/username string admin
+d-i passwd/user-password password admin
+d-i passwd/user-password-again password admin
+d-i user-setup/encrypt-home boolean false
 
-# Modificar la instalación dentro del chroot
-echo "Entrando en chroot para modificar paquetes..."
-chroot "${EDIT_DIR}/squashfs-root" /bin/bash <<EOF
-# Actualizar lista de paquetes
-apt-get update
+# Grupos de usuario
+#d-i passwd/user-default-groups string sudo
 
-# Añadir repositorio STYX
-echo "Añadiendo repositorio STYX..."
-curl -s --compressed "${STYX_GPG_KEY}" | gpg --dearmor > /etc/apt/trusted.gpg.d/styx.gpg
-curl -s --compressed -o /etc/apt/sources.list.d/styx.list "${STYX_SOURCES_LIST}"
+# Configuracion discos
+d-i partman-auto/disk string /dev/sda
+#d-i partman-auto/method string lvm
 
-# Quitar paquetes no deseados
-if [ -n "${REMOVE_PACKAGES}" ]; then
-    echo "Quitando paquetes: ${REMOVE_PACKAGES}"
-    apt-get remove -y --purge ${REMOVE_PACKAGES}
-    apt-get autoremove -y
-fi
+# Configuracion Particionado
+#d-i partman-auto/choose_recipe select server
 
-# Añadir paquetes nuevos
-if [ -n "${ADD_PACKAGES}" ]; then
-    echo "Instalando paquetes: ${ADD_PACKAGES}"
-    apt-get install -y ${ADD_PACKAGES}
-fi
+# Instala GRUB automáticamente en /dev/sda
+d-i grub-installer/bootdev string /dev/sda
+d-i grub-installer/only_debian boolean true
+d-i grub-installer/confirm boolean true
+d-i grub-installer/with_other_os boolean false
 
-# Actualizamos otra vez para actualizar los paquetes Styx
-apt-get upgrade -y
-# Limpiar caché
-apt-get clean
-rm -rf /var/lib/apt/lists/*
+# Mirror 
+d-i mirror/country string automatic
+d-i mirror/http/proxy string
+d-i mirror/protocol string http
+d-i mirror/http/hostname string deb.debian.org
+d-i mirror/http/directory string /debian
+
+d-i apt-setup/security_host string security.debian.org
+d-i apt-setup/security_path string /debian-security
+
+# Paquetes
+## No instalar paquetes recomendados
+tasksel tasksel/first multiselect
+d-i pkgsel/install-recommends boolean false
+
+# No actualizar paquetes
+d-i pkgsel/update-policy select none
+d-i pkgsel/upgrade select none
+
+# Custom Paquetes
+d-i pkgsel/include string net-tools curl openssh-server openssh-client
+
+# Excluir paquetes específicos si es necesario
+# isc-dhcp-client y isc-dhcp-server cuando se reemplace por kea
+d-i pkgsel/exclude string openssh-ftp-server
+
+# Misc
+## Survey false
+d-i popularity-contest/participate boolean false
+
+# Comandos post-instalación
+#d-i preseed/late_command string \
+#    in-target sh -c 'echo "deb [arch=amd64 signed-by=/usr/share/keyrings/styx.gpg] https://styx-firewall.github.io/styx-repo/ bookworm main" > /etc/apt/sources.list.d/styx.list'; \
+#    in-target wget -O /usr/share/keyrings/styx.gpg https://styx-firewall.github.io/styx-repo/styx-firewall-keyring.gpg; \
+#    in-target apt-get update; \
+#    in-target apt-get install -y linux-image-6.12.32-10-styx linux-headers-6.12.32-10-styx; \
+#    in-target apt-get purge -y linux-image-amd64 linux-headers-amd64; \
+#    in-target systemctl enable ssh; \
+#    in-target update-grub; \
+#    in-target apt-get clean; \
+#    in-target systemctl enable tmp.mount && \
+#    in-target systemctl mask tmp-fs.target    
+
+# late_command
+d-i preseed/late_command string \
+    in-target cp /cdrom/extra/styx-postinst.sh /tmp/ ; \
+    in-target chmod +x /tmp/styx-postinst.sh ; \
+    in-target /tmp/styx-postinst.sh ; \
+    in-target rm /tmp/styx-postinst.sh
+
+#in-target echo "tmpfs /tmp tmpfs defaults,noatime,mode=1777 0 0" >> /target/etc/fstab ;
+
+# Reboot once finished
+d-i finish-install/reboot_in_progress note
+d-i debian-installer/exit/poweroff boolean true
 EOF
 
-# Salir del chroot y desmontar
-echo "Saliendo de chroot y desmontando directorios..."
-umount "${EDIT_DIR}/squashfs-root/dev"
-umount "${EDIT_DIR}/squashfs-root/proc"
-umount "${EDIT_DIR}/squashfs-root/sys"
+# Modificar el menú para añadir opción automática
+#cat > extracted/isolinux/txt.cfg <<EOF
+#default auto-install-styx
+#timeout 50
+#prompt 0
 
-# Recrear el filesystem.squashfs
-echo "Recreando filesystem.squashfs..."
-rm -f "${EDIT_DIR}/install.amd/squashfs-root/filesystem.squashfs"
-mksquashfs "${EDIT_DIR}/squashfs-root" "${EDIT_DIR}/install.amd/squashfs-root/filesystem.squashfs" -comp xz
+cat > extracted/isolinux/isolinux.cfg <<EOF
+default auto-install-styx
+timeout 5
+prompt 0
 
-# Calcular nuevos hashes MD5
-echo "Calculando nuevos hashes MD5..."
-cd "${EDIT_DIR}"
-find -type f -print0 | xargs -0 md5sum > md5sum.txt
-cd -
+label auto-install-styx
+  menu label ^Instalacion automatica de STYX
+  menu default
+  kernel /install.amd/vmlinuz
+  append auto=true priority=high vga=788 initrd=/install.amd/initrd.gz preseed/file=/cdrom/preseed.cfg --- quiet
+EOF
 
-# Crear nueva ISO
-echo "Creando nueva ISO personalizada..."
+# 5. Modificar el menú gráfico (UEFI)
+cat > extracted/boot/grub/grub.cfg <<EOF
+set timeout=5
+menuentry "Instalacion automatica de STYX" {
+    linux /install.amd/vmlinuz auto=true priority=high preseed/file=/cdrom/preseed.cfg --- quiet
+    initrd /install.amd/initrd.gz
+}
+EOF
+
+
+# Eliminar el menú txt.cfg original
+rm extracted/isolinux/txt.cfg
+
+# Cleanup iso 
+rm -rf extracted/install.amd/gtk
+rm -rf extracted/pool/extra/* 
+rm -rf extracted/pool/main/g/gcc-*
+rm -rf extracted/pool/main/g/gtk*
+rm -rf extracted/pool/main/e/espeek*
+rm -rf extracted/pool/main/f/fonts-noto*
+rm -rf extracted/pool/main/i/iptables
+rm -rf extracted/non-free-firmware/n/nvidia-graphics-drivers-tesla-*
+rm -rf extracted/pool/main/x/xserver-xorg*
+rm -rf extracted/pool/main/x/xfsprogs
+rm -rf extracted/install.amd/doc
+rm -rf extracted/doc
+
+
+# 5. Reconstruir la ISO
 xorriso -as mkisofs \
-    -r -V "Debian ${DEBIAN_VERSION} Custom" \
-    -o "${CUSTOM_ISO_NAME}" \
-    -J -J -joliet-long -cache-inodes \
-    -b isolinux/isolinux.bin \
-    -c isolinux/boot.cat \
-    -no-emul-boot \
-    -boot-load-size 4 -boot-info-table \
-    -eltorito-alt-boot \
-    -e boot/grub/efi.img \
-    -no-emul-boot \
-    -isohybrid-gpt-basdat \
-    -isohybrid-apm-hfsplus \
-    "${EDIT_DIR}"
+  -r -V "STYX NetInst" \
+  -o "$CUSTOM_ISO_NAME" \
+  -J -joliet-long \
+  -b isolinux/isolinux.bin \
+  -c isolinux/boot.cat \
+  -no-emul-boot \
+  -boot-load-size 4 \
+  -boot-info-table \
+  -eltorito-alt-boot \
+  -e boot/grub/efi.img \
+  -no-emul-boot \
+  -isohybrid-gpt-basdat \
+  extracted
 
-# Limpiar
-echo "Limpiando directorios temporales..."
-rm -rf "${WORK_DIR}"
 
-echo "¡ISO personalizada creada con éxito!: ${CUSTOM_ISO_NAME}"
-echo "Tamaño de la ISO: $(du -h ${CUSTOM_ISO_NAME} | cut -f1)"
+
+isohybrid "$CUSTOM_ISO_NAME"
+echo "ISO creada en $WORK_DIR/$CUSTOM_ISO_NAME"
+mv $WORK_DIR/$CUSTOM_ISO_NAME /var/www/html/
+echo "ISO movida a /var/www/html/"
