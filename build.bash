@@ -1,5 +1,5 @@
 #!/bin/bash
-# version 0.2
+# version 0.3
 set -e
 
 if [ "$(id -u)" -ne 0 ]; then
@@ -136,10 +136,10 @@ d-i popularity-contest/participate boolean false
 
 # late_command
 d-i preseed/late_command string \
-    in-target cp /cdrom/extra/styx-postinst.sh /tmp/ ; \
-    in-target chmod +x /tmp/styx-postinst.sh ; \
-    in-target /tmp/styx-postinst.sh ; \
-    in-target rm /tmp/styx-postinst.sh
+    cp /cdrom/extra/styx-postinst.sh /target/tmp/ ; \
+    chmod +x /target/tmp/styx-postinst.sh ; \
+    chroot /target /tmp/styx-postinst.sh ; \
+    rm /target/tmp/styx-postinst.sh
 
 #in-target echo "tmpfs /tmp tmpfs defaults,noatime,mode=1777 0 0" >> /target/etc/fstab ;
 
