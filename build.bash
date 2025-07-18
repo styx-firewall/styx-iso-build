@@ -1,5 +1,5 @@
 #!/bin/bash
-# version 0.3
+# version 0.4
 set -e
 
 if [ "$(id -u)" -ne 0 ]; then
@@ -45,12 +45,6 @@ chmod +x extracted/extra/styx-postinst.sh
 # 3. Preparar preseed.cfg para instalación automática
 cat > extracted/preseed.cfg <<EOF
 
-# Early commands
-# Allow admin user to be created
-d-i preseed/early_command string \
-    mkdir -p /target/etc && \
-    sed -i '/^admin$/d' /target/etc/adduser.conf;
-
 # Configuración de red
 d-i netcfg/choose_interface select auto
 d-i netcfg/get_hostname string styx
@@ -66,14 +60,15 @@ d-i partman/confirm_nooverwrite boolean true
 
 # Configuración de usuario
 #d-i passwd/root-login boolean false
-#d-i passwd/make-user boolean true  
+#d-i passwd/make-user boolean true
+d-i passwd/make-user boolean false
 d-i passwd/allow-badname boolean true
-d-i user-setup/allow-password-weak boolean true  
+d-i user-setup/allow-password-weak boolean true
 d-i passwd/user-fullname string admin
-d-i passwd/username string admin
-d-i passwd/user-password password admin
-d-i passwd/user-password-again password admin
-d-i user-setup/encrypt-home boolean false
+#d-i passwd/username string admin
+#d-i passwd/user-password password admin
+#d-i passwd/user-password-again password admin
+#d-i user-setup/encrypt-home boolean false
 
 # Grupos de usuario
 #d-i passwd/user-default-groups string sudo
@@ -91,7 +86,7 @@ d-i grub-installer/only_debian boolean true
 d-i grub-installer/confirm boolean true
 d-i grub-installer/with_other_os boolean false
 
-# Mirror 
+# Mirror
 d-i mirror/country string automatic
 d-i mirror/http/proxy string
 d-i mirror/protocol string http
@@ -115,7 +110,7 @@ d-i pkgsel/include string net-tools curl openssh-server openssh-client
 
 # Excluir paquetes específicos si es necesario
 # isc-dhcp-client y isc-dhcp-server cuando se reemplace por kea
-d-i pkgsel/exclude string openssh-ftp-server
+d-i pkgsel/exclude string openssh-sftp-server espeakup-udeb reiserfsprogs-udeb whiptail laptop-detect dictionary-common aspell
 
 # Misc
 ## Survey false
@@ -132,14 +127,16 @@ d-i popularity-contest/participate boolean false
 #    in-target update-grub; \
 #    in-target apt-get clean; \
 #    in-target systemctl enable tmp.mount && \
-#    in-target systemctl mask tmp-fs.target    
+#    in-target systemctl mask tmp-fs.target
 
 # late_command
 d-i preseed/late_command string \
-    cp /cdrom/extra/styx-postinst.sh /target/tmp/ ; \
-    chmod +x /target/tmp/styx-postinst.sh ; \
-    chroot /target /tmp/styx-postinst.sh ; \
-    rm /target/tmp/styx-postinst.sh
+    echo "late_command ejecutado" > /target/late_command.log ; \
+    cp /cdrom/extra/styx-postinst.sh /target/ ; \
+    chmod +x /target/styx-postinst.sh ; \
+    chroot /target /styx-postinst.sh
+
+#rm /target/tmp/styx-postinst.sh
 
 #in-target echo "tmpfs /tmp tmpfs defaults,noatime,mode=1777 0 0" >> /target/etc/fstab ;
 
@@ -179,18 +176,15 @@ EOF
 # Eliminar el menú txt.cfg original
 rm extracted/isolinux/txt.cfg
 
-# Cleanup iso 
-rm -rf extracted/install.amd/gtk
-rm -rf extracted/pool/extra/* 
-rm -rf extracted/pool/main/g/gcc-*
-rm -rf extracted/pool/main/g/gtk*
-rm -rf extracted/pool/main/e/espeek*
-rm -rf extracted/pool/main/f/fonts-noto*
-rm -rf extracted/pool/main/i/iptables
-rm -rf extracted/non-free-firmware/n/nvidia-graphics-drivers-tesla-*
-rm -rf extracted/pool/main/x/xserver-xorg*
-rm -rf extracted/pool/main/x/xfsprogs
-rm -rf extracted/install.amd/doc
+# Cleanup iso
+#rm -rf extracted/install.amd/gtk
+#rm -rf extracted/pool/main/g/gtk*
+#rm -rf extracted/pool/main/e/espeek*
+#rm -rf extracted/pool/main/f/fonts-noto*
+#rm -rf extracted/pool/main/i/iptables
+#rm -rf extracted/non-free-firmware/n/nvidia-graphics-drivers-tesla-*
+#rm -rf extracted/pool/main/x/xserver-xorg*
+#rm -rf extracted/pool/main/x/xfsprogs
 rm -rf extracted/doc
 
 
