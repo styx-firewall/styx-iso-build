@@ -1,2 +1,7 @@
-debian-*
-styx*iso
+# Ignora todo
+*
+
+# Excepto
+!README.md
+!build.bash
+!styx-postinst.sh
