@@ -11,7 +11,9 @@ apt-get install -y --no-install-recommends \
     linux-headers-6.12.32-10-styx
 
 # Limpieza
-apt-get purge -y linux-image-amd64 linux-headers-amd64
+apt-get purge -y linux-image-6.1.0-35-amd64
+apt-get remove aspell whiptail -y
+apt-get autoremove -y
 apt upgrade -y
 systemctl enable ssh
 update-grub
