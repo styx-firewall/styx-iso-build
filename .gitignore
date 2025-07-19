@@ -4,4 +4,4 @@
 # Excepto
 !README.md
 !build.bash
-!styx-postinst.sh
+!preseed.cfg
