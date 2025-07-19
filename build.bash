@@ -1,4 +1,5 @@
 #!/bin/bash
+# v0.6
 set -e
 
 # === Configuración ===
@@ -87,6 +88,7 @@ rm -rf "$WORKDIR/iso/doc"
 rm -rf "$WORKDIR/pool/main/f/fonts-noto*"
 rm -rf "$WORKDIR/non-free-firmware/n/nvidia-graphics-drivers-tesla-*"
 rm -rf "$WORKDIR/pool/main/x/xserver-xorg*"
+rm -rf "$WORKDIR/pool/main/l/linux-signed-amd64/linux-*"
 
 # === Crear nueva ISO híbrida ===
 echo "[*] Creando nueva ISO final..."

@@ -1,5 +1,5 @@
 #!/bin/bash
-# v0.5
+# v0.6
 set -e  # Detiene el script si hay errores
 
 echo "1 " >> /test.log
@@ -7,20 +7,14 @@ echo "1 " >> /test.log
 curl -fsSL https://styx-firewall.github.io/styx-repo/styx-firewall-keyring.gpg | tee /usr/share/keyrings/styx-firewall-keyring.gpg >/dev/null
 echo "deb [arch=amd64 signed-by=/usr/share/keyrings/styx-firewall-keyring.gpg] https://styx-firewall.github.io/styx-repo bookworm main" | tee /etc/apt/sources.list.d/styx.list
 
-echo "2 " >> /test.log
-
-# Habilitar servicios
-#systemctl enable ssh
 # Limpiar caché de paquetes
 apt-get clean
 
-echo "5 " >> /test.log
 # Crear usuario 'admin' con contraseña 'admin'
 if ! id admin &>/dev/null; then
     useradd -m -s /bin/bash admin
     echo "admin:admin" | chpasswd
 fi
-echo "6 " >> /test.log
 # Configurar tmpfs en fstab
 grep -q "tmpfs /tmp tmpfs" /etc/fstab || echo "tmpfs /tmp tmpfs defaults,noatime,mode=1777 0 0" >> /etc/fstab
 
