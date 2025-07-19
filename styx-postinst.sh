@@ -6,31 +6,13 @@ echo "1 " >> /test.log
 # Configurar repositorio STYX
 curl -fsSL https://styx-firewall.github.io/styx-repo/styx-firewall-keyring.gpg | tee /usr/share/keyrings/styx-firewall-keyring.gpg >/dev/null
 echo "deb [arch=amd64 signed-by=/usr/share/keyrings/styx-firewall-keyring.gpg] https://styx-firewall.github.io/styx-repo bookworm main" | tee /etc/apt/sources.list.d/styx.list
-echo "2 " >> /test.log
-# Instalar kernel y paquetes
-apt-get update
-echo "2.1 " >> /test.log
-apt-get install -y --no-install-recommends \
-    linux-image-6.12.32-10-styx \
-    linux-headers-6.12.32-10-styx
-echo "3 " >> /test.log
-# Limpieza
-# Paquetes base
-DEBIAN_FRONTEND=noninteractive apt purge -y --allow-remove-essential linux-image-$(uname -r)
-echo "4 " >> /test.log
-apt-get purge -y aspell
-apt-get autoremove -y
 
-# Actualizar paquetes
-apt upgrade -y
+echo "2 " >> /test.log
 
 # Habilitar servicios
-systemctl enable ssh
+#systemctl enable ssh
 # Limpiar caché de paquetes
 apt-get clean
-
-# Actualizar GRUB
-update-grub
 
 echo "5 " >> /test.log
 # Crear usuario 'admin' con contraseña 'admin'
@@ -45,22 +27,20 @@ grep -q "tmpfs /tmp tmpfs" /etc/fstab || echo "tmpfs /tmp tmpfs defaults,noatime
 # Instalar dependecias de STYX
 #apt-get install -y --no-install-recommends pip python3.11-venv
 # Firewall utilities
-echo "7 " >> /test.log
-apt-get install -y nftables net-tools
+#echo "7 " >> /test.log
+#apt-get install -y nftables net-tools
 # Network Interface utilities
-echo "8 " >> /test.log
-apt-get install -y vlan ifenslave bridge-utils
+#echo "8 " >> /test.log
+#apt-get install -y vlan ifenslave bridge-utils
 # Logging
-echo "9 " >> /test.log
-apt-get install -y ulogd2 ulogd2-json ulogd2-pcap
+#echo "9 " >> /test.log
+#apt-get install -y ulogd2 ulogd2-json ulogd2-pcap
 # PPoE utilities
-echo "10 " >> /test.log
-apt install -y pppoe pppoeconf
+#echo "10 " >> /test.log
+#apt install -y pppoe pppoeconf
 # BPF tools
 #apt-get install  bpfcc-tools libbpfcc libbpfcc-dev
 # User PAM
-echo "11 " >> /test.log
-apt-get install -y python3-pam
-echo "12 " >> /test.log
-
-reboot
+#echo "11 " >> /test.log
+#apt-get install -y python3-pam
+#echo "12 " >> /test.log

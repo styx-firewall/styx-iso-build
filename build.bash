@@ -25,6 +25,9 @@ mkdir -p "$WORKDIR/iso"
 rsync -a --exclude=TRANS.TBL "$WORKDIR/mnt/" "$WORKDIR/iso/"
 umount "$WORKDIR/mnt"
 
+# Script Post-Instalación
+cp styx-postinst.sh "$WORKDIR/iso"
+
 # === Copiar preseed.cfg ===
 if [ -f "$PRESEED_FILE" ]; then
     echo "[*] Copiando preseed.cfg..."
@@ -81,7 +84,9 @@ EOF
 
 # Limpiando  ISO
 rm -rf "$WORKDIR/iso/doc"
-rm -rf extracted/pool/main/f/fonts-noto*
+rm -rf "$WORKDIR/pool/main/f/fonts-noto*"
+rm -rf "$WORKDIR/non-free-firmware/n/nvidia-graphics-drivers-tesla-*"
+rm -rf "$WORKDIR/pool/main/x/xserver-xorg*"
 
 # === Crear nueva ISO híbrida ===
 echo "[*] Creando nueva ISO final..."
