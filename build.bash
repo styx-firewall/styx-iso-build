@@ -1,5 +1,5 @@
 #!/bin/bash
-# version 0.4
+# v0.5
 set -e
 
 if [ "$(id -u)" -ne 0 ]; then
@@ -106,11 +106,7 @@ d-i pkgsel/update-policy select none
 d-i pkgsel/upgrade select none
 
 # Custom Paquetes
-d-i pkgsel/include string net-tools curl openssh-server openssh-client
-
-# Excluir paquetes específicos si es necesario
-# isc-dhcp-client y isc-dhcp-server cuando se reemplace por kea
-d-i pkgsel/exclude string openssh-sftp-server espeakup-udeb reiserfsprogs-udeb whiptail laptop-detect dictionary-common aspell
+d-i pkgsel/include string curl openssh-server openssh-client
 
 # Misc
 ## Survey false
@@ -131,6 +127,7 @@ d-i popularity-contest/participate boolean false
 
 # late_command
 d-i preseed/late_command string \
+    cp /etc/resolv.conf /target/etc/resolv.conf ;
     echo "late_command ejecutado" > /target/late_command.log ; \
     cp /cdrom/extra/styx-postinst.sh /target/ ; \
     chmod +x /target/styx-postinst.sh ; \
@@ -172,18 +169,17 @@ menuentry "Instalacion automatica de STYX" {
 }
 EOF
 
-
 # Eliminar el menú txt.cfg original
 rm extracted/isolinux/txt.cfg
 
 # Cleanup iso
-#rm -rf extracted/install.amd/gtk
-#rm -rf extracted/pool/main/g/gtk*
+rm -rf extracted/install.amd/gtk
+rm -rf extracted/pool/main/g/gtk*
 #rm -rf extracted/pool/main/e/espeek*
-#rm -rf extracted/pool/main/f/fonts-noto*
-#rm -rf extracted/pool/main/i/iptables
-#rm -rf extracted/non-free-firmware/n/nvidia-graphics-drivers-tesla-*
-#rm -rf extracted/pool/main/x/xserver-xorg*
+rm -rf extracted/pool/main/f/fonts-noto*
+# *FALLA* rm -rf extracted/pool/main/i/iptables
+rm -rf extracted/non-free-firmware/n/nvidia-graphics-drivers-tesla-*
+rm -rf extracted/pool/main/x/xserver-xorg*
 #rm -rf extracted/pool/main/x/xfsprogs
 rm -rf extracted/doc
 
@@ -203,8 +199,6 @@ xorriso -as mkisofs \
   -no-emul-boot \
   -isohybrid-gpt-basdat \
   extracted
-
-
 
 isohybrid "$CUSTOM_ISO_NAME"
 echo "ISO creada en $WORK_DIR/$CUSTOM_ISO_NAME"
