@@ -3,21 +3,23 @@
 set -e
 
 # === Configuración ===
-STYX_VERSION="0.1"
-BASE_ISO="debian-12.11.0-amd64-netinst.iso"
+STYX_VERSION="0.3"
+BASE_ISO="debian-13.0.0-amd64-netinst.iso"
 CUSTOM_PACKAGES_DIR="./packages"               # Incluye tu kernel .deb
 WORKDIR="./iso_build"
 NEW_ISO="styx-firewall-${STYX_VERSION}.iso"
 PRESEED_FILE="./preseed.cfg"
 
 DEB_PACKAGES=(
-    "https://styx-firewall.github.io/styx-repo/pool/main/linux-headers-6.12.32-10-styx_10-styx_amd64.deb"
-    "https://styx-firewall.github.io/styx-repo/pool/main/linux-image-6.12.32-10-styx_10-styx_amd64.deb"
+    "https://github.com/styx-firewall/styx-repo/raw/main/pool/main/linux-headers-6.12.42-13-styx_13_amd64.deb"
+    "https://github.com/styx-firewall/styx-repo/raw/main/pool/main/linux-image-6.12.42-13-styx_13_amd64.deb"
 )
 
 # === Preparación ===
 mkdir -p "$WORKDIR"
+# Limpiar previo
 rm -rf "$WORKDIR"/iso
+#rm -f "$CUSTOM_PACKAGES_DIR"/*
 mkdir -p "$WORKDIR/mnt"
 mount -o loop "$BASE_ISO" "$WORKDIR/mnt"
 
@@ -37,6 +39,18 @@ else
     echo "[!] Archivo preseed.cfg no encontrado, abortando."
     exit 1
 fi
+
+# === Descargar paquetes DEB ===
+echo "[*] Descargando paquetes DEB ..."
+mkdir -p "$CUSTOM_PACKAGES_DIR"
+for url in "${DEB_PACKAGES[@]}"; do
+    filename=$(basename "$url")
+    if [ ! -f "$CUSTOM_PACKAGES_DIR/$filename" ]; then
+        wget -O "$CUSTOM_PACKAGES_DIR/$filename" "$url"
+    else
+        echo "  - $filename ya existe, omitiendo descarga."
+    fi
+done
 
 # === Agregar paquetes personalizados (.deb) ===
 if compgen -G "$CUSTOM_PACKAGES_DIR/*.deb" > /dev/null; then
@@ -110,4 +124,4 @@ xorriso -as mkisofs \
 
 echo "[+] ISO generada: $NEW_ISO"
 mv "$NEW_ISO" /var/www/html/
-# http://192.168.2.154/styx-firewall-0.1.iso
+# http://192.168.2.154/styx-firewall-0.3.iso
