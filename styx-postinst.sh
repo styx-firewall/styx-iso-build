@@ -15,6 +15,64 @@ if ! id admin &>/dev/null; then
     useradd -m -s /bin/bash admin
     echo "admin:admin" | chpasswd
 fi
+
+# Default services
+systemctl disable apt-daily-upgrade.service
+systemctl disable dpkg-db-backup.service
+systemctl disable systemd-battery-check.service
+systemctl disable systemd-hybrid-sleep.service
+systemctl disable systemd-quotacheck-root.service
+systemctl disable systemd-suspend-then-hibernate.service
+systemctl disable systemd-suspend.service
+systemctl disable display-manager.service
+systemctl disable plymouth-*.service
+#systemctl disable apparmor.service
+#systemctl disable apt-daily.service
+#systemctl disable e2scrub_all.service
+#systemctl disable e2scrub_reap.service
+#systemctl disable fstrim.service
+#systemctl disable getty-static.service
+#systemctl disable grub-common.service
+#systemctl disable initrd-cleanup.service
+#systemctl disable initrd-parse-etc.service
+#systemctl disable initrd-switch-root.service
+#systemctl disable initrd-udevadm-cleanup-db.service
+#systemctl disable modprobe@*.service
+#systemctl disable rc-local.service
+#systemctl disable rescue.service
+#systemctl disable systemd-ask-password-console.service
+#systemctl disable systemd-ask-password-wall.service
+#systemctl disable systemd-bsod.service
+#systemctl disable systemd-confext.service
+#systemctl disable systemd-firstboot.service
+#systemctl disable systemd-fsck-root.service
+#systemctl disable systemd-hibernate-clear.service
+#systemctl disable systemd-hibernate-resume.service
+#systemctl disable systemd-hibernate.service
+#systemctl disable systemd-hostnamed.service
+#systemctl disable systemd-hwdb-update.service
+#systemctl disable systemd-initctl.service
+#systemctl disable systemd-journal-catalog-update.service
+#systemctl disable systemd-journald-sync@.service
+#systemctl disable systemd-networkd-persistent-storage.service
+#systemctl disable systemd-pcrmachine.service
+#systemctl disable systemd-pcrphase-initrd.service
+#systemctl disable systemd-pcrphase-sysinit.service
+#systemctl disable systemd-pcrphase.service
+#systemctl disable systemd-poweroff.service
+#systemctl disable systemd-soft-reboot.service
+#systemctl disable systemd-sysext.service
+#systemctl disable systemd-tpm2-setup-early.service
+#systemctl disable systemd-tpm2-setup.service
+#systemctl disable systemd-udev-settle.service
+#systemctl disable systemd-vconsole-setup.service
+#systemctl disable NetworkManager.service
+#systemctl disable connman.service
+#systemctl disable kbd.service
+#systemctl disable syslog.service
+#systemctl disable ifupdown-pre.service
+#systemctl disablenetworking.service
+
 # Configurar tmpfs en fstab  Trixie comes with tmpfs by default
 # grep -q "tmpfs /tmp tmpfs" /etc/fstab || echo "tmpfs /tmp tmpfs defaults,noatime,mode=1777 0 0" >> /etc/fstab
 
