@@ -23,6 +23,9 @@ cp /var/lib/styx/configs/logrotate.conf /etc/logrotate.conf
 cp /var/lib/styx/configs/lr-ulogd2 /etc/logrotate.d/ulogd2
 cp /var/lib/styx/configs/os-release /etc/os-release
 #cp /var/lib/styx/configs/journald.conf /etc/systemd/journald.conf
+#cp /var/lib/styx/configs/motd /etc/motd
+#cp /var/lib/styx/configs/issue /etc/issue
+
 # Update grub after modifying os-release
 update-grub
 
