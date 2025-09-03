@@ -1,19 +1,32 @@
 #!/bin/bash
-# v0.6
+# v0.8
 set -e
 
 # === Configuración ===
-STYX_VERSION="0.3"
+STYX_VERSION="0.4"
 BASE_ISO="debian-13.0.0-amd64-netinst.iso"
-CUSTOM_PACKAGES_DIR="./packages"               # Incluye tu kernel .deb
+CUSTOM_PACKAGES_DIR="./packages"
 WORKDIR="./iso_build"
 NEW_ISO="styx-firewall-${STYX_VERSION}.iso"
 PRESEED_FILE="./preseed.cfg"
 
-DEB_PACKAGES=(
-    "https://github.com/styx-firewall/styx-repo/raw/main/pool/main/linux-headers-6.12.42-13-styx_13_amd64.deb"
-    "https://github.com/styx-firewall/styx-repo/raw/main/pool/main/linux-image-6.12.42-13-styx_13_amd64.deb"
+# Base URL for DEB packages
+DEB_BASE_URL="https://github.com/styx-firewall/styx-repo/raw/main/pool/main/"
+
+# List of DEB package filenames
+DEB_PACKAGE_FILES=(
+    "linux-image-styx.deb"
+    "linux-headers-styx.deb"
+    "linux-headers-6.12.42-13-styx_13_amd64.deb"
+    "linux-image-6.12.42-13-styx_13_amd64.deb"
+    "styx-conf-0.1-5.deb"
 )
+
+# Construct full URLs for DEB packages
+DEB_PACKAGES=()
+for pkg_file in "${DEB_PACKAGE_FILES[@]}"; do
+    DEB_PACKAGES+=("${DEB_BASE_URL}${pkg_file}")
+done
 
 # === Preparación ===
 mkdir -p "$WORKDIR"
@@ -124,4 +137,4 @@ xorriso -as mkisofs \
 
 echo "[+] ISO generada: $NEW_ISO"
 mv "$NEW_ISO" /var/www/html/
-# http://192.168.2.154/styx-firewall-0.3.iso
+# http://192.168.2.154/styx-firewall-0.4.iso
