@@ -3,7 +3,7 @@
 set -e
 
 # === Configuración ===
-STYX_VERSION="0.4"
+STYX_VERSION="0.5"
 BASE_ISO="debian-13.0.0-amd64-netinst.iso"
 CUSTOM_PACKAGES_DIR="./packages"
 WORKDIR="./iso_build"
@@ -95,7 +95,7 @@ timeout 5
 prompt 0
 
 label auto-install-styx
-  menu label ^Instalacion automatica de STYX
+  menu label ^Auto Install STYX (Isolinux)
   menu default
   kernel /install.amd/vmlinuz
   append auto=true priority=high vga=788 initrd=/install.amd/initrd.gz preseed/file=/cdrom/preseed.cfg --- quiet
@@ -103,11 +103,60 @@ EOF
 
 # 5. Modificar el menú gráfico (UEFI)
 cat > $WORKDIR/iso/boot/grub/grub.cfg <<EOF
+if [ x$feature_default_font_path = xy ] ; then
+   font=unicode
+else
+   font=$prefix/font.pf2
+fi
+
+if loadfont $font ; then
+  set gfxmode=800x600
+  set gfxpayload=keep
+  insmod efi_gop
+  insmod efi_uga
+  insmod video_bochs
+  insmod video_cirrus
+  insmod gfxterm
+  insmod png
+  terminal_output gfxterm
+fi
+
+if background_image /isolinux/splash.png; then
+  set color_normal=light-gray/black
+  set color_highlight=white/black
+elif background_image /splash.png; then
+  set color_normal=light-gray/black
+  set color_highlight=white/black
+else
+  set menu_color_normal=cyan/blue
+  set menu_color_highlight=white/blue
+fi
+
+insmod play
+play 960 440 1 0 4 440 1
+set theme=/boot/grub/theme/1
+
 set timeout=5
-menuentry "Instalacion automatica de STYX" {
+menuentry --hotkey=g 'Styx Graphical Install' {
+    set background_color=black
+    linux    /install.amd/vmlinuz vga=788 auto=true priority=high preseed/file=/cdrom/preseed.cfg --- quiet
+    initrd   /install.amd/gtk/initrd.gz
+}
+menuentry --hotkey=g 'Styx Graphical Install (Dark Theme)' {
+    set background_color=black
+    linux    /install.amd/vmlinuz vga=788 theme=dark auto=true priority=high preseed/file=/cdrom/preseed.cfg --- quiet
+    initrd   /install.amd/gtk/initrd.gz
+}
+menuentry "Styx Install" {
     linux /install.amd/vmlinuz auto=true priority=high preseed/file=/cdrom/preseed.cfg --- quiet
     initrd /install.amd/initrd.gz
 }
+menuentry --hotkey=r 'Rescue mode' {
+    set background_color=black
+    linux    /install.amd/vmlinuz vga=788 rescue/enable=true --- quiet
+    initrd   /install.amd/initrd.gz
+}
+
 EOF
 
 # Limpiando  ISO
@@ -137,4 +186,4 @@ xorriso -as mkisofs \
 
 echo "[+] ISO generada: $NEW_ISO"
 mv "$NEW_ISO" /var/www/html/
-# http://192.168.2.154/styx-firewall-0.4.iso
+# http://192.168.2.154/styx-firewall-0.5.iso
