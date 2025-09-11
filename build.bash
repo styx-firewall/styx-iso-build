@@ -3,7 +3,7 @@
 set -e
 
 # === Configuración ===
-STYX_VERSION="0.5"
+STYX_VERSION="0.6"
 BASE_ISO="debian-13.0.0-amd64-netinst.iso"
 CUSTOM_PACKAGES_DIR="./packages"
 WORKDIR="./iso_build"
@@ -19,7 +19,7 @@ DEB_PACKAGE_FILES=(
     "linux-headers-styx.deb"
     "linux-headers-6.12.42-13-styx_13_amd64.deb"
     "linux-image-6.12.42-13-styx_13_amd64.deb"
-    "styx-conf-0.1-5.deb"
+    "styx-conf-0.1-8.deb"
 )
 
 # Construct full URLs for DEB packages
@@ -186,4 +186,4 @@ xorriso -as mkisofs \
 
 echo "[+] ISO generada: $NEW_ISO"
 mv "$NEW_ISO" /var/www/html/
-# http://192.168.2.154/styx-firewall-0.5.iso
+# http://192.168.2.154/styx-firewall-0.6.iso

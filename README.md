@@ -1,4 +1,3 @@
 # styx-iso-build
 
-test
-
+ISO Build Script
