@@ -68,12 +68,5 @@ systemctl restart logrotate
 systemctl restart udhcpc
 systemctl restart lighttpd
 
-# Instalar dependecias de STYX
-# Firewall utilities
-#apt-get install -y nftables net-tools
-# Network Interface utilities
-#apt-get install -y vlan ifenslave bridge-utils
-# PPoE utilities
-#apt install -y pppoe pppoeconf
 # BPF tools
 #apt-get install  bpfcc-tools libbpfcc libbpfcc-dev
