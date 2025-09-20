@@ -1,9 +1,8 @@
 #!/bin/bash
-# v0.8
 set -e
 
-# === Configuración ===
-STYX_VERSION="0.6"
+# === Configuration ===
+STYX_VERSION="0.8"
 BASE_ISO="debian-13.0.0-amd64-netinst.iso"
 CUSTOM_PACKAGES_DIR="./packages"
 WORKDIR="./iso_build"
@@ -17,9 +16,9 @@ DEB_BASE_URL="https://github.com/styx-firewall/styx-repo/raw/main/pool/main/"
 DEB_PACKAGE_FILES=(
     "linux-image-styx.deb"
     "linux-headers-styx.deb"
-    "linux-headers-6.12.42-13-styx_13_amd64.deb"
-    "linux-image-6.12.42-13-styx_13_amd64.deb"
-    "styx-conf-0.1-8.deb"
+    "linux-headers-6.12.48-14-styx_14_amd64.deb"
+    "linux-image-6.12.48-14-styx_14_amd64.deb"
+    "styx-conf-0.1-9.deb"
 )
 
 # Construct full URLs for DEB packages
@@ -28,9 +27,9 @@ for pkg_file in "${DEB_PACKAGE_FILES[@]}"; do
     DEB_PACKAGES+=("${DEB_BASE_URL}${pkg_file}")
 done
 
-# === Preparación ===
+# === Preparation ===
 mkdir -p "$WORKDIR"
-# Limpiar previo
+# Clean previous
 rm -rf "$WORKDIR"/iso
 #rm -f "$CUSTOM_PACKAGES_DIR"/*
 mkdir -p "$WORKDIR/mnt"
@@ -41,52 +40,63 @@ mkdir -p "$WORKDIR/iso"
 rsync -a --exclude=TRANS.TBL "$WORKDIR/mnt/" "$WORKDIR/iso/"
 umount "$WORKDIR/mnt"
 
-# Script Post-Instalación
+# Post-Installation Script
 cp styx-postinst.sh "$WORKDIR/iso"
 
-# === Copiar preseed.cfg ===
+# === Copy preseed.cfg ===
 if [ -f "$PRESEED_FILE" ]; then
-    echo "[*] Copiando preseed.cfg..."
+    echo "[*] Copying preseed.cfg..."
     cp "$PRESEED_FILE" "$WORKDIR/iso/preseed.cfg"
 else
-    echo "[!] Archivo preseed.cfg no encontrado, abortando."
+    echo "[!] preseed.cfg file not found, aborting."
     exit 1
 fi
 
-# === Descargar paquetes DEB ===
-echo "[*] Descargando paquetes DEB ..."
+# === Download DEB packages ===
+echo "[*] Downloading DEB packages ..."
+
 mkdir -p "$CUSTOM_PACKAGES_DIR"
+# To avoid set -e error on timeout
+if ! read -t 5 -p "Clean the custom packages directory ($CUSTOM_PACKAGES_DIR)? [y/N]: " clean_custom_dir; then
+    clean_custom_dir="N"
+fi
+clean_custom_dir=${clean_custom_dir:-N}
+if [[ "$clean_custom_dir" =~ ^[Yy]$ ]]; then
+    echo "Cleaning $CUSTOM_PACKAGES_DIR ..."
+    rm -f "$CUSTOM_PACKAGES_DIR"/*
+fi
+
 for url in "${DEB_PACKAGES[@]}"; do
     filename=$(basename "$url")
     if [ ! -f "$CUSTOM_PACKAGES_DIR/$filename" ]; then
         wget -O "$CUSTOM_PACKAGES_DIR/$filename" "$url"
     else
-        echo "  - $filename ya existe, omitiendo descarga."
+    echo "  - $filename already exists, skipping download."
     fi
 done
 
-# === Agregar paquetes personalizados (.deb) ===
+# === Add custom packages (.deb) ===
 if compgen -G "$CUSTOM_PACKAGES_DIR/*.deb" > /dev/null; then
-    echo "[*] Agregando paquetes personalizados..."
+    echo "[*] Adding custom packages..."
     mkdir -p "$WORKDIR/iso/pool/extras"
     cp "$CUSTOM_PACKAGES_DIR"/*.deb "$WORKDIR/iso/pool/extras/"
 
-    echo "[*] Generando Packages.gz..."
+    echo "[*] Generating Packages.gz..."
     mkdir -p "$WORKDIR/iso/dists/stable/extras/binary-amd64"
     cd "$WORKDIR/iso"
     dpkg-scanpackages pool/extras /dev/null | gzip -9 > dists/stable/extras/binary-amd64/Packages.gz
     cd - > /dev/null
 else
-    echo "[!] No se encontraron .deb personalizados en $CUSTOM_PACKAGES_DIR"
+    echo "[!] No custom .deb packages found in $CUSTOM_PACKAGES_DIR"
 fi
 
-# === Modificar menú de arranque (isolinux) ===
+# === Modify boot menu (isolinux) ===
 TXT_CFG="$WORKDIR/iso/isolinux/txt.cfg"
 if grep -q "label install" "$TXT_CFG"; then
-    echo "[*] Modificando menú de arranque para usar preseed.cfg..."
+    echo "[*] Modifying boot menu to use preseed.cfg..."
     sed -i '/^label install/,/^$/s@^\( *append \).*@\1auto=true priority=critical preseed/file=/cdrom/preseed.cfg initrd=/install.amd/initrd.gz ---@' "$TXT_CFG"
 else
-    echo "[!] No se encontró entrada 'label install' en txt.cfg. Modifícalo manualmente."
+    echo "[!] 'label install' entry not found in txt.cfg. Please modify it manually."
 fi
 
 cat > $WORKDIR/iso/isolinux/isolinux.cfg <<EOF
@@ -101,7 +111,7 @@ label auto-install-styx
   append auto=true priority=high vga=788 initrd=/install.amd/initrd.gz preseed/file=/cdrom/preseed.cfg --- quiet
 EOF
 
-# 5. Modificar el menú gráfico (UEFI)
+# 5. Modify graphical menu (UEFI)
 cat > $WORKDIR/iso/boot/grub/grub.cfg <<EOF
 if [ x$feature_default_font_path = xy ] ; then
    font=unicode
@@ -159,15 +169,15 @@ menuentry --hotkey=r 'Rescue mode' {
 
 EOF
 
-# Limpiando  ISO
+# Cleaning ISO
 rm -rf "$WORKDIR/iso/doc"
 rm -rf "$WORKDIR/pool/main/f/fonts-noto*"
 rm -rf "$WORKDIR/non-free-firmware/n/nvidia-graphics-drivers-tesla-*"
 rm -rf "$WORKDIR/pool/main/x/xserver-xorg*"
 rm -rf "$WORKDIR/pool/main/l/linux-signed-amd64/linux-*"
 
-# === Crear nueva ISO híbrida ===
-echo "[*] Creando nueva ISO final..."
+# === Create new hybrid ISO ===
+echo "[*] Creating new final ISO..."
 
 xorriso -as mkisofs \
   -r -V "STYX NetInst" \
@@ -184,6 +194,6 @@ xorriso -as mkisofs \
   -isohybrid-gpt-basdat \
   "$WORKDIR/iso"
 
-echo "[+] ISO generada: $NEW_ISO"
+echo "[+] ISO generated: $NEW_ISO"
 mv "$NEW_ISO" /var/www/html/
-# http://192.168.2.154/styx-firewall-0.6.iso
+# http://192.168.2.154/styx-firewall-0.8.iso

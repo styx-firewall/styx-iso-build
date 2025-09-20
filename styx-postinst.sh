@@ -1,5 +1,5 @@
 #!/bin/bash
-# v0.7
+# v0.8
 
 set -e  # Detiene el script si hay errores
 echo "Running post-installation script..."
