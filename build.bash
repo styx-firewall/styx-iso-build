@@ -35,7 +35,7 @@ rm -rf "$WORKDIR"/iso
 mkdir -p "$WORKDIR/mnt"
 mount -o loop "$BASE_ISO" "$WORKDIR/mnt"
 
-echo "[*] Copiando contenido de la ISO base..."
+echo "[*] Copying contents of the base ISO..."
 mkdir -p "$WORKDIR/iso"
 rsync -a --exclude=TRANS.TBL "$WORKDIR/mnt/" "$WORKDIR/iso/"
 umount "$WORKDIR/mnt"
@@ -58,7 +58,7 @@ echo "[*] Downloading DEB packages ..."
 mkdir -p "$CUSTOM_PACKAGES_DIR"
 # To avoid set -e error on timeout
 if ! read -t 5 -p "Clean the custom packages directory ($CUSTOM_PACKAGES_DIR)? [y/N]: " clean_custom_dir; then
-    clean_custom_dir="N"
+    clean_custom_dir="n"
 fi
 clean_custom_dir=${clean_custom_dir:-N}
 if [[ "$clean_custom_dir" =~ ^[Yy]$ ]]; then
@@ -66,14 +66,32 @@ if [[ "$clean_custom_dir" =~ ^[Yy]$ ]]; then
     rm -f "$CUSTOM_PACKAGES_DIR"/*
 fi
 
+
+# Download and verify each .deb file
+download_failed=0
 for url in "${DEB_PACKAGES[@]}"; do
     filename=$(basename "$url")
     if [ ! -f "$CUSTOM_PACKAGES_DIR/$filename" ]; then
-        wget -O "$CUSTOM_PACKAGES_DIR/$filename" "$url"
+        echo "[*] Downloading $filename ..."
+        if ! wget -O "$CUSTOM_PACKAGES_DIR/$filename" "$url"; then
+            echo "[!] Error downloading $filename"
+            download_failed=1
+        fi
     else
-    echo "  - $filename already exists, skipping download."
+        echo "  - $filename already exists, skipping download."
+    fi
+    # Verify that the file exists and is not empty
+    if [ ! -s "$CUSTOM_PACKAGES_DIR/$filename" ]; then
+        echo "[!] File $filename does not exist or is empty after download."
+        download_failed=1
     fi
 done
+
+# If any download failed, abort the script
+if [ "$download_failed" -ne 0 ]; then
+    echo "[!] One or more .deb package downloads failed. Aborting."
+    exit 1
+fi
 
 # === Add custom packages (.deb) ===
 if compgen -G "$CUSTOM_PACKAGES_DIR/*.deb" > /dev/null; then
