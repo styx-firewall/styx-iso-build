@@ -32,15 +32,13 @@ cp /var/lib/styx/configs/issue /etc/issue
 cp /var/lib/styx/configs/lighttpd.conf /etc/lighttpd/lighttpd.conf
 cp /var/lib/styx/configs/lighttpd-ssl.conf /etc/lighttpd/conf-available/10-ssl.conf
 
-# Trigger update grub due os-release change
-update-grub
-
 # Be sure services are enabled
 systemctl enable ssh
 systemctl enable ulogd2
 systemctl enable logrotate
 systemctl enable udhcpc
 systemctl enable lighttpd
+systemctl enable styx-gateway
 
 # Enable SSL and php in lighttpd
 lighttpd-enable-mod fastcgi
@@ -55,18 +53,24 @@ openssl req -x509 -newkey rsa:4096 -sha256 -days 3650 -nodes \
   -addext "subjectAltName=DNS:styx-gateway.local,$IPS"
 
 # Clean
-apt remove --purge -y latptop-detect
+apt remove --purge -y laptop-detect
 apt remove --purge -y dhcpcd-base
 # Make sure default meta-package is removed to avoid unwanted upgrades
 apt remove --purge -y linux-image-amd64
 
 # Reload services
-systemctl daemon-reload
-systemctl restart ssh
-systemctl restart ulogd2
-systemctl restart logrotate
-systemctl restart udhcpc
-systemctl restart lighttpd
+#systemctl daemon-reload
+#systemctl restart ssh
+#systemctl restart ulogd2
+#systemctl restart logrotate
+#systemctl restart udhcpc
+#systemctl restart lighttpd
+
+# Start styx-gateway (add to postinst in styx-gateway package?)
+systemctl start styx-gateway
+
+# Trigger update grub due os-release change
+update-grub
 
 # BPF tools
 #apt-get install  bpfcc-tools libbpfcc libbpfcc-dev
