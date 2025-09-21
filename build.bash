@@ -18,10 +18,10 @@ DEB_PACKAGE_FILES=(
     "linux-headers-styx.deb"
     "linux-headers-6.12.48-14-styx_14_amd64.deb"
     "linux-image-6.12.48-14-styx_14_amd64.deb"
-    "styx-conf-0.1-9.deb"
-    "styx-gateway-0.1-1.deb"
-    "styx-ui-0.1-1.deb"
-    "styx-firewall-0.1-1.deb"
+    "styx-conf-0.1-10.deb"
+    "styx-gateway-0.1-11.deb"
+    "styx-ui-0.1-11.deb"
+    "styx-firewall-0.1-11.deb"
 )
 
 # Construct full URLs for DEB packages
@@ -217,4 +217,4 @@ xorriso -as mkisofs \
 
 echo "[+] ISO generated: $NEW_ISO"
 mv "$NEW_ISO" /var/www/html/
-# http://192.168.2.154/styx-firewall-0.8.iso
+echo "http://192.168.2.154/styx-firewall-0.8.iso"
