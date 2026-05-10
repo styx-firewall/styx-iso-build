@@ -1,5 +1,5 @@
 #!/bin/bash
-# v0.9
+# v0.10
 
 echo "Running post-installation script..."
 
@@ -16,7 +16,7 @@ if ! id admin &>/dev/null; then
     echo "admin:admin" | chpasswd
 fi
 
-apt-get update -y
+apt-get update
 # Assure styx-conf is installed
 apt-get install -y styx-conf
 
@@ -61,10 +61,6 @@ systemctl enable styx-gateway
 systemctl unmask tmp.mount 2>/dev/null
 systemctl enable tmp.mount
 
-# Enable SSL and php in lighttpd
-lighttpd-enable-mod fastcgi
-lighttpd-enable-mod fastcgi-php-fpm
-lighttpd-enable-mod ssl
 
 # Generate self-signed SSL cert for lighttpd
 IPS=$(hostname -I | awk '{for(i=1;i<=NF;i++) printf "IP:"$i","}' | sed 's/,$//')
@@ -92,12 +88,18 @@ else
   echo "Warning: /etc/ssl/local-certs/https-cert.pem not found; skipping chmod"
 fi
 
+# Enable SSL and php in lighttpd
+lighttpd-enable-mod fastcgi
+lighttpd-enable-mod fastcgi-php-fpm
+lighttpd-enable-mod ssl
+
+
 # Clean
 apt remove --purge -y laptop-detect
 apt remove --purge -y dhcpcd-base
 # Make sure default meta-package is removed to avoid unwanted upgrades
 apt remove --purge -y linux-image-amd64
-
+apt autoremove --purge -y
 # Trigger update grub due os-release change
 update-grub
 
