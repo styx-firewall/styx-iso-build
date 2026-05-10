@@ -2,8 +2,8 @@
 set -e
 
 # === Configuration ===
-STYX_VERSION="0.8"
-BASE_ISO="debian-13.0.0-amd64-netinst.iso"
+STYX_VERSION="0.9"
+BASE_ISO="debian-13.4.0-amd64-netinst.iso"
 CUSTOM_PACKAGES_DIR="./packages"
 WORKDIR="./iso_build"
 NEW_ISO="styx-firewall-${STYX_VERSION}.iso"
