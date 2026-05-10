@@ -1,5 +1,5 @@
 #!/bin/bash
-# v0.10
+# v0.11
 
 echo "Running post-installation script..."
 
@@ -61,6 +61,12 @@ systemctl enable styx-gateway
 systemctl unmask tmp.mount 2>/dev/null
 systemctl enable tmp.mount
 
+# Resize home LV back to 512M and free remaining VG space
+umount /home
+e2fsck -f -y /dev/vg_styx/home
+resize2fs /dev/vg_styx/home 500M
+lvreduce -L 512M /dev/vg_styx/home
+mount /home
 
 # Generate self-signed SSL cert for lighttpd
 IPS=$(hostname -I | awk '{for(i=1;i<=NF;i++) printf "IP:"$i","}' | sed 's/,$//')
