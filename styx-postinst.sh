@@ -57,6 +57,10 @@ systemctl enable logrotate
 systemctl enable lighttpd
 systemctl enable styx-gateway
 
+# Enable tmpfs for /tmp
+systemctl unmask tmp.mount 2>/dev/null
+systemctl enable tmp.mount
+
 # Enable SSL and php in lighttpd
 lighttpd-enable-mod fastcgi
 lighttpd-enable-mod fastcgi-php-fpm
