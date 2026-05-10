@@ -2,7 +2,7 @@
 set -e
 
 # === Configuration ===
-STYX_VERSION="0.9"
+STYX_VERSION="0.10"
 BASE_ISO="debian-13.4.0-amd64-netinst.iso"
 CUSTOM_PACKAGES_DIR="./packages"
 WORKDIR="./iso_build"
@@ -16,12 +16,12 @@ DEB_BASE_URL="https://github.com/styx-firewall/styx-repo/raw/main/pool/main/"
 DEB_PACKAGE_FILES=(
     "linux-image-styx.deb"
     "linux-headers-styx.deb"
-    "linux-headers-6.12.48-14-styx_14_amd64.deb"
-    "linux-image-6.12.48-14-styx_14_amd64.deb"
-    "styx-conf-0.1-10.deb"
-    "styx-gateway-0.1-11.deb"
-    "styx-ui-0.1-11.deb"
-    "styx-firewall-0.1-11.deb"
+    "linux-headers-6.12.87-15-styx_15_amd64.deb"
+    "linux-image-6.12.87-15-styx_15_amd64.deb"
+    "styx-conf-0.1-12.deb"
+    "styx-gateway-0.1-12.deb"
+    "styx-ui-0.1-12.deb"
+    "styx-firewall-0.1-12.deb"
 )
 
 # Construct full URLs for DEB packages
