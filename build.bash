@@ -102,10 +102,15 @@ if compgen -G "$CUSTOM_PACKAGES_DIR/*.deb" > /dev/null; then
     mkdir -p "$WORKDIR/iso/pool/extras"
     cp "$CUSTOM_PACKAGES_DIR"/*.deb "$WORKDIR/iso/pool/extras/"
 
+    # Copy override file to suppress dpkg-scanpackages warnings
+    if [ -f "packages-override" ]; then
+        cp "packages-override" "$WORKDIR/iso/pool/extras/"
+    fi
+
     echo "[*] Generating Packages.gz..."
     mkdir -p "$WORKDIR/iso/dists/stable/extras/binary-amd64"
     cd "$WORKDIR/iso"
-    dpkg-scanpackages pool/extras /dev/null | gzip -9 > dists/stable/extras/binary-amd64/Packages.gz
+    dpkg-scanpackages pool/extras pool/extras/packages-override | gzip -9 > dists/stable/extras/binary-amd64/Packages.gz
     cd - > /dev/null
 else
     echo "[!] No custom .deb packages found in $CUSTOM_PACKAGES_DIR"
@@ -217,4 +222,4 @@ xorriso -as mkisofs \
 
 echo "[+] ISO generated: $NEW_ISO"
 mv "$NEW_ISO" /var/www/html/
-echo "http://192.168.2.154/styx-firewall-0.8.iso"
+echo "http://192.168.2.154/${NEW_ISO}"
