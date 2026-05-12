@@ -48,6 +48,15 @@ copy_if_exists "$CFG_DIR/issue" /etc/issue
 copy_if_exists "$CFG_DIR/lighttpd.conf" /etc/lighttpd/lighttpd.conf
 copy_if_exists "$CFG_DIR/lighttpd-ssl.conf" /etc/lighttpd/conf-available/10-ssl.conf
 
+mkdir -p /etc/styx
+chmod 600 /etc/styx
+copy_if_exists "$CFG_DIR/certs.json" /etc/styx/certs.json
+chmod 600 /etc/styx/certs.json
+
+mkidr -p /etc/systemd/system/tmp.mount.d
+copy_if_exists "$CFG_DIR/tmp.conf" /etc/systemd/system/tmp.mount.d/override.conf
+chmod 644 /etc/systemd/system/tmp.mount.d/override.conf
+
 # Be sure services are enabled
 systemctl enable ssh
 systemctl enable ulogd2
@@ -107,6 +116,37 @@ update-grub
 #resize2fs /dev/vg_styx/home 500M
 #lvreduce -L 512M /dev/vg_styx/home
 #mount /home
+
+# Compliance
+systemctl unmask ctrl-alt-del.service
+
+# Blacklist unused/unwanted kernel modules for security hardening
+BLACKLIST_DIR=/etc/modprobe.d
+mkdir -p "$BLACKLIST_DIR"
+
+BLACKLIST_MODULES=(
+  sctp
+  dccp
+  cramfs
+  freevxfs
+  jffs2
+  hfs
+  hfsplus
+  squashfs
+  udf
+)
+
+for mod in "${BLACKLIST_MODULES[@]}"; do
+  conf_file="$BLACKLIST_DIR/${mod}.conf"
+  cat > "$conf_file" <<EOF
+# ${mod} – blacklisted for security hardening
+blacklist ${mod}
+install ${mod} /bin/false
+EOF
+done
+
+echo "Blacklisted kernel modules: ${BLACKLIST_MODULES[*]}"
+
 
 # BPF tools
 #apt-get install  bpfcc-tools libbpfcc libbpfcc-dev
