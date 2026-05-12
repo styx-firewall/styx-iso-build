@@ -1,5 +1,5 @@
 #!/bin/bash
-# v0.11
+# v0.12
 
 echo "Running post-installation script..."
 
@@ -160,6 +160,31 @@ EOF
 done
 
 echo "Blacklisted kernel modules: ${BLACKLIST_MODULES[*]}"
+
+
+# ---------------------------------------------------------------------------
+# Journal directory permissions – ensure mode 2750 (owner rwx, group r-x,
+# others ---) so that others cannot read journal logs.
+# ---------------------------------------------------------------------------
+
+echo "Hardening journal directory permissions to 2750..."
+
+# 1) Fix existing directories now
+chmod 2750 /var/log/journal 2>/dev/null || true
+find /var/log/journal -type d -exec chmod 2750 {} \; 2>/dev/null || true
+chmod 2750 /run/log/journal 2>/dev/null || true
+find /run/log/journal -type d -exec chmod 2750 {} \; 2>/dev/null || true
+
+# 2) Ensure /run/log/journal is recreated with 2750 on every boot
+mkdir -p /etc/tmpfiles.d
+cat > /etc/tmpfiles.d/journal-perms.conf <<'EOF'
+# Ensure journal directories are created with mode 2750
+d /run/log/journal 2750 root systemd-journal -
+d /run/log/journal/%m 2750 root systemd-journal -
+EOF
+chmod 644 /etc/tmpfiles.d/journal-perms.conf
+
+echo "Journal directory permissions set to 2750"
 
 
 # BPF tools
