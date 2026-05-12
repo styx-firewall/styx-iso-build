@@ -184,6 +184,16 @@ d /run/log/journal/%m 2750 root systemd-journal -
 EOF
 chmod 644 /etc/tmpfiles.d/journal-perms.conf
 
+# 3) Force restrictive umask for systemd-journald so any directory or file it
+#    creates (rotated journals, subdirs, etc.) can never be world-readable.
+mkdir -p /etc/systemd/system/systemd-journald.service.d
+cat > /etc/systemd/system/systemd-journald.service.d/umask.conf <<'EOF'
+[Service]
+UMask=0027
+EOF
+chmod 644 /etc/systemd/system/systemd-journald.service.d/umask.conf
+systemctl daemon-reload 2>/dev/null || true
+
 echo "Journal directory permissions set to 2750"
 
 
