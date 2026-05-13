@@ -1,26 +1,28 @@
 #!/bin/bash
-# v0.12
+# v0.14
+
+set +e  # Continue on error (do not halt)
 
 echo "Running post-installation script..."
 export DEBIAN_FRONTEND=noninteractive
 
-# Configurar repositorio STYX
+# Configure STYX repository
 curl -fsSL https://styx-firewall.github.io/styx-repo/styx-firewall-keyring.gpg | tee /usr/share/keyrings/styx-firewall-keyring.gpg >/dev/null
 chmod 644 /usr/share/keyrings/styx-firewall-keyring.gpg
 echo "deb [arch=amd64 signed-by=/usr/share/keyrings/styx-firewall-keyring.gpg] https://styx-firewall.github.io/styx-repo trixie main" | tee /etc/apt/sources.list.d/styx.list
 chmod 644 /etc/apt/sources.list.d/styx.list
 
-# Limpiar caché de paquetes
+# Clean package cache
 apt-get clean
 
-# Crear usuario 'admin' con contraseña 'admin'
+# Create user 'admin' with password 'admin'
 if ! id admin &>/dev/null; then
     useradd -m -s /bin/bash admin
     echo "admin:admin" | chpasswd
 fi
 
 apt-get update
-# Assure styx-conf is installed
+# Ensure styx-conf is installed
 apt-get install -y styx-conf
 
 # Copy custom initial config files (copy only if source exists)
@@ -63,7 +65,7 @@ copy_if_exists "$CFG_DIR/rsyslog.conf" /etc/rsyslog.conf
 chmod 644 /etc/rsyslog.conf
 
 mkdir -p /etc/styx
-chmod 600 /etc/styx
+chmod 700 /etc/styx
 copy_if_exists "$CFG_DIR/certs.json" /etc/styx/certs.json
 chmod 600 /etc/styx/certs.json
 
@@ -124,7 +126,7 @@ apt remove --purge -y dhcpcd-base
 # Make sure default meta-package is removed to avoid unwanted upgrades
 apt remove --purge -y linux-image-amd64
 #apt autoremove --purge -y
-# Trigger update grub due os-release change
+# Trigger update-grub due to os-release change
 update-grub
 
 #umount /home
@@ -134,7 +136,7 @@ update-grub
 #mount /home
 
 # Compliance
-systemctl unmask ctrl-alt-del.service
+systemctl mask ctrl-alt-del.service
 
 # Blacklist unused/unwanted kernel modules for security hardening
 BLACKLIST_DIR=/etc/modprobe.d
