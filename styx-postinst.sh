@@ -2,6 +2,7 @@
 # v0.12
 
 echo "Running post-installation script..."
+export DEBIAN_FRONTEND=noninteractive
 
 # Configurar repositorio STYX
 curl -fsSL https://styx-firewall.github.io/styx-repo/styx-firewall-keyring.gpg | tee /usr/share/keyrings/styx-firewall-keyring.gpg >/dev/null
@@ -199,9 +200,9 @@ systemctl daemon-reload 2>/dev/null || true
 echo "Journal directory permissions set to 2750"
 
 # Install
-apt-get install -y chrony
-
+apt-get -o Dpkg::Options::="--force-confold" install -y chrony
+apt-get -o Dpkg::Options::="--force-confold" install -y rsyslog
 # Utils
-apt-get install -y ccze
+apt-get -o Dpkg::Options::="--force-confold" install -y ccze
 # BPF tools
 #apt-get install  bpfcc-tools libbpfcc libbpfcc-dev
