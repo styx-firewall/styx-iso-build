@@ -58,6 +58,8 @@ copy_if_exists "$CFG_DIR/lighttpd.conf" /etc/lighttpd/lighttpd.conf
 chmod 644 /etc/lighttpd/lighttpd.conf
 copy_if_exists "$CFG_DIR/lighttpd-ssl.conf" /etc/lighttpd/conf-available/10-ssl.conf
 chmod 644 /etc/lighttpd/conf-available/10-ssl.conf
+copy_if_exists "$CFG_DIR/rsyslog.conf" /etc/rsyslog.conf
+chmod 644 /etc/rsyslog.conf
 
 mkdir -p /etc/styx
 chmod 600 /etc/styx
@@ -196,6 +198,10 @@ systemctl daemon-reload 2>/dev/null || true
 
 echo "Journal directory permissions set to 2750"
 
+# Install
+apt-get install -y chrony
 
+# Utils
+apt-get install -y ccze
 # BPF tools
 #apt-get install  bpfcc-tools libbpfcc libbpfcc-dev
