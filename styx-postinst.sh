@@ -19,6 +19,7 @@ apt-get clean
 if ! id admin &>/dev/null; then
     useradd -m -s /bin/bash admin
     echo "admin:admin" | chpasswd
+    usermod -aG sudo admin
 fi
 
 apt-get update
@@ -42,14 +43,22 @@ copy_if_exists() {
   fi
 }
 
+# Logrotate configs
+copy_if_exists "$CFG_DIR/lr-ulogd2" /etc/logrotate.d/ulogd2
+copy_if_exists "$CFG_DIR/lr-chrony" /etc/logrotate.d/chrony
+copy_if_exists "$CFG_DIR/lr-wtmp" /etc/logrotate.d/wtmp
+copy_if_exists "$CFG_DIR/lr-wtmpdb" /etc/logrotate.d/wtmpdb
+copy_if_exists "$CFG_DIR/lr-styx" /etc/logrotate.d/styx
+copy_if_exists "$CFG_DIR/lr-apt" /etc/logrotate.d/apt
+chmod 644 /etc/logrotate.d/*
+
+# Others
 copy_if_exists "$CFG_DIR/ulogd.conf" /etc/ulogd.conf
 chmod 640 /etc/ulogd.conf
 copy_if_exists "$CFG_DIR/sshd_config" /etc/ssh/sshd_config
 chmod 600 /etc/ssh/sshd_config
 copy_if_exists "$CFG_DIR/logrotate.conf" /etc/logrotate.conf
 chmod 644 /etc/logrotate.conf
-copy_if_exists "$CFG_DIR/lr-ulogd2" /etc/logrotate.d/ulogd2
-chmod 644 /etc/logrotate.d/ulogd2
 copy_if_exists "$CFG_DIR/os-release" /etc/os-release
 chmod 644 /etc/os-release
 # copy_if_exists "$CFG_DIR/journald.conf" /etc/systemd/journald.conf
