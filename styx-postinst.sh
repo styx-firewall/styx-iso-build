@@ -220,5 +220,8 @@ apt-get -o Dpkg::Options::="--force-confold" install -y chrony
 apt-get -o Dpkg::Options::="--force-confold" install -y rsyslog
 # Utils
 apt-get -o Dpkg::Options::="--force-confold" install -y ccze
+
+# Clean /var/log
+rm -f /var/log/README
 # BPF tools
 #apt-get install  bpfcc-tools libbpfcc libbpfcc-dev
