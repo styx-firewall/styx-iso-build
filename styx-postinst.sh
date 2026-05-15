@@ -205,6 +205,16 @@ systemctl daemon-reload 2>/dev/null || true
 
 echo "Journal directory permissions set to 2750"
 
+# Add systemd override for ulogd2 to set UMask and Group
+mkdir -p /etc/systemd/system/ulogd2.service.d
+cat > /etc/systemd/system/ulogd2.service.d/override.conf <<'EOF'
+[Service]
+UMask=0027
+Group=adm
+EOF
+chmod 644 /etc/systemd/system/ulogd2.service.d/override.conf
+systemctl daemon-reload 2>/dev/null || true
+
 # Install
 apt-get -o Dpkg::Options::="--force-confold" install -y chrony
 apt-get -o Dpkg::Options::="--force-confold" install -y rsyslog
