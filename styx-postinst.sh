@@ -136,7 +136,7 @@ update-grub
 #mount /home
 
 # Compliance
-systemctl mask ctrl-alt-del.service
+systemctl mask ctrl-alt-del.target
 
 # Blacklist unused/unwanted kernel modules for security hardening
 BLACKLIST_DIR=/etc/modprobe.d
@@ -174,11 +174,12 @@ echo "Blacklisted kernel modules: ${BLACKLIST_MODULES[*]}"
 
 echo "Hardening journal directory permissions to 2750..."
 
-# 1) Fix existing directories now
+# 1) Fix existing directories now (remove ACLs then set mode)
 chmod 2750 /var/log/journal 2>/dev/null || true
-find /var/log/journal -type d -exec chmod 2750 {} \; 2>/dev/null || true
+find /var/log/journal -type d -exec setfacl -b {} \; -exec chmod 2750 {} \; 2>/dev/null || true
+
 chmod 2750 /run/log/journal 2>/dev/null || true
-find /run/log/journal -type d -exec chmod 2750 {} \; 2>/dev/null || true
+find /run/log/journal -type d -exec setfacl -b {} \; -exec chmod 2750 {} \; 2>/dev/null || true
 
 # 2) Ensure /run/log/journal is recreated with 2750 on every boot
 mkdir -p /etc/tmpfiles.d
@@ -188,6 +189,9 @@ d /run/log/journal 2750 root systemd-journal -
 d /run/log/journal/%m 2750 root systemd-journal -
 EOF
 chmod 644 /etc/tmpfiles.d/journal-perms.conf
+
+# Apply tmpfiles immediately
+systemd-tmpfiles --create /etc/tmpfiles.d/journal-perms.conf 2>/dev/null || true
 
 # 3) Force restrictive umask for systemd-journald so any directory or file it
 #    creates (rotated journals, subdirs, etc.) can never be world-readable.
