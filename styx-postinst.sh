@@ -226,7 +226,6 @@ systemctl daemon-reload 2>/dev/null || true
 
 # Install
 apt-get -o Dpkg::Options::="--force-confold" install -y chrony
-apt-get -o Dpkg::Options::="--force-confold" install -y rsyslog
 # Utils
 apt-get -o Dpkg::Options::="--force-confold" install -y ccze
 
