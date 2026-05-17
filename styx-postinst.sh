@@ -233,7 +233,9 @@ apt-get -o Dpkg::Options::="--force-confold" install -y ccze
 rm -f /var/log/README
 
 # Styx provide network-online
+# systemctl mask ifupdown-wait-online.service ifupdown-pre.service ifup@.service
 # systemctl mask networking.service
+# systemctl mask systemd-networkd.service
 # rm -f /etc/systemd/system/network-online.target.wants/networking.service
 # ln -s /lib/systemd/system/styx-gateway.service /etc/systemd/system/network-online.target.wants/styx-gateway.service
 
