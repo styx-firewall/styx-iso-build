@@ -231,5 +231,12 @@ apt-get -o Dpkg::Options::="--force-confold" install -y ccze
 
 # Clean /var/log
 rm -f /var/log/README
+
+# Styx provide network-online
+# systemctl mask networking.service
+# rm -f /etc/systemd/system/network-online.target.wants/networking.service
+# ln -s /lib/systemd/system/styx-gateway.service /etc/systemd/system/network-online.target.wants/styx-gateway.service
+
+systemctl daemon-reload
 # BPF tools
 #apt-get install  bpfcc-tools libbpfcc libbpfcc-dev
