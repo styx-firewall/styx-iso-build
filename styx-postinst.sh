@@ -193,9 +193,12 @@ find /run/log/journal -type d -exec setfacl -b {} \; -exec chmod 2750 {} \; 2>/d
 # 2) Ensure /run/log/journal is recreated with 2750 on every boot
 mkdir -p /etc/tmpfiles.d
 cat > /etc/tmpfiles.d/journal-perms.conf <<'EOF'
-# Ensure journal directories are created with mode 2750
-d /run/log/journal 2750 root systemd-journal -
-d /run/log/journal/%m 2750 root systemd-journal -
+# Ensure journal directories use mode 2750
+z /run/log/journal 2750 root systemd-journal - -
+Z /run/log/journal/%m 2750 root systemd-journal - -
+
+z /var/log/journal 2750 root systemd-journal - -
+Z /var/log/journal/%m 2750 root systemd-journal - -
 EOF
 chmod 644 /etc/tmpfiles.d/journal-perms.conf
 
