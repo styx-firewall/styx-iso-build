@@ -238,7 +238,6 @@ rm -f /var/log/README
 # systemctl mask systemd-networkd.service
 # rm -f /etc/systemd/system/network-online.target.wants/networking.service
 # ln -s /lib/systemd/system/styx-gateway.service /etc/systemd/system/network-online.target.wants/styx-gateway.service
-
-systemctl daemon-reload
+# systemctl daemon-reload
 # BPF tools
 #apt-get install  bpfcc-tools libbpfcc libbpfcc-dev
