@@ -6,6 +6,40 @@ set +e  # Continue on error (do not halt)
 echo "Running post-installation script..."
 export DEBIAN_FRONTEND=noninteractive
 
+# ---------------------------------------------------------------------------
+# Capture network configuration from the installer for first boot seed
+# ---------------------------------------------------------------------------
+echo "Capturing network configuration..."
+mkdir -p /etc/styx
+chmod 700 /etc/styx
+
+# Get the interface with the default route
+IFACE=$(ip -o route show default | awk '{print $5}' | head -1)
+
+if [ -n "$IFACE" ]; then
+    # IP in CIDR notation (e.g., 192.168.1.100/24)
+    IP_CIDR=$(ip -o -f inet addr show "$IFACE" | awk '{print $4}' | head -1)
+    # Gateway
+    GATEWAY=$(ip -o route show default | awk '{print $3}' | head -1)
+
+    if [ -n "$IP_CIDR" ] && [ -n "$GATEWAY" ]; then
+        cat > /etc/styx/first_boot_seed.json <<EOF
+{
+  "network": {
+    "address": "${IP_CIDR}",
+    "gateway": "${GATEWAY}"
+  }
+}
+EOF
+        chmod 600 /etc/styx/first_boot_seed.json
+        echo "  -> Saved: IP=${IP_CIDR}, Gateway=${GATEWAY} (interface ${IFACE})"
+    else
+        echo "  -> Warning: Could not determine IP or gateway for interface ${IFACE}"
+    fi
+else
+    echo "  -> Warning: No default route found, network config not saved"
+fi
+
 # Configure STYX repository
 curl -fsSL https://styx-firewall.github.io/styx-repo/styx-firewall-keyring.gpg | tee /usr/share/keyrings/styx-firewall-keyring.gpg >/dev/null
 chmod 644 /usr/share/keyrings/styx-firewall-keyring.gpg
