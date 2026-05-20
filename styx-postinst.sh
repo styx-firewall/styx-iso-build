@@ -109,8 +109,8 @@ chmod 644 /etc/rsyslog.conf
 
 mkdir -p /etc/styx
 chmod 700 /etc/styx
-copy_if_exists "$CFG_DIR/certs.json" /etc/styx/certs.json
-chmod 600 /etc/styx/certs.json
+copy_if_exists "$CFG_DIR/startup-certs.json" /etc/styx/startup-certs.json
+chmod 600 /etc/styx/startup-certs.json
 
 mkdir -p /etc/systemd/system/tmp.mount.d
 copy_if_exists "$CFG_DIR/tmp.conf" /etc/systemd/system/tmp.mount.d/override.conf
