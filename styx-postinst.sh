@@ -21,18 +21,22 @@ if [ -n "$IFACE" ]; then
     IP_CIDR=$(ip -o -f inet addr show "$IFACE" | awk '{print $4}' | head -1)
     # Gateway
     GATEWAY=$(ip -o route show default | awk '{print $3}' | head -1)
+    # MAC address of the interface
+    MAC_ADDR=$(cat /sys/class/net/"$IFACE"/address 2>/dev/null)
 
     if [ -n "$IP_CIDR" ] && [ -n "$GATEWAY" ]; then
         cat > /etc/styx/first_boot_seed.json <<EOF
 {
   "network": {
     "address": "${IP_CIDR}",
-    "gateway": "${GATEWAY}"
+    "gateway": "${GATEWAY}",
+    "interface": "${IFACE}",
+    "mac": "${MAC_ADDR}"
   }
 }
 EOF
         chmod 600 /etc/styx/first_boot_seed.json
-        echo "  -> Saved: IP=${IP_CIDR}, Gateway=${GATEWAY} (interface ${IFACE})"
+        echo "  -> Saved: IP=${IP_CIDR}, Gateway=${GATEWAY}, MAC=${MAC_ADDR} (interface ${IFACE})"
     else
         echo "  -> Warning: Could not determine IP or gateway for interface ${IFACE}"
     fi
@@ -287,11 +291,14 @@ apt-get -o Dpkg::Options::="--force-confold" install -y ccze
 rm -f /var/log/README
 
 # Styx provide network-online
-# systemctl mask ifupdown-wait-online.service ifupdown-pre.service ifup@.service
-# systemctl mask networking.service
-# systemctl mask systemd-networkd.service
-# rm -f /etc/systemd/system/network-online.target.wants/networking.service
-# ln -s /lib/systemd/system/styx-gateway.service /etc/systemd/system/network-online.target.wants/styx-gateway.service
-# systemctl daemon-reload
+# Disable network managers
+systemctl mask ifupdown-wait-online.service ifupdown-pre.service ifup@.service || true
+systemctl mask networking.service || true
+systemctl mask systemd-networkd.service systemd-networkd-wait-online.service || true
+systemctl mask NetworkManager.service NetworkManager-wait-online.service || true
+
+# Setup styx es network-online target
+rm -f /etc/systemd/system/network-online.target.wants/networking.service
+ln -sf /lib/systemd/system/styx-gateway.service /etc/systemd/system/network-online.target.wants/styx-gateway.service
 # BPF tools
 #apt-get install  bpfcc-tools libbpfcc libbpfcc-dev
