@@ -110,6 +110,8 @@ copy_if_exists "$CFG_DIR/lighttpd-ssl.conf" /etc/lighttpd/conf-available/10-ssl.
 chmod 644 /etc/lighttpd/conf-available/10-ssl.conf
 copy_if_exists "$CFG_DIR/rsyslog.conf" /etc/rsyslog.conf
 chmod 644 /etc/rsyslog.conf
+copy_if_exists "$CFG_DIR/udhcpc.conf" /etc/udhcpc/default.script
+chmod 644 /etc/udhcpc/default.script
 
 mkdir -p /etc/styx
 chmod 700 /etc/styx
