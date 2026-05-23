@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-# === Configuration ===
+# Configuration
 STYX_VERSION="0.11"
 BASE_ISO="debian-13.4.0-amd64-netinst.iso"
 CUSTOM_PACKAGES_DIR="./packages"
@@ -30,7 +30,7 @@ for pkg_file in "${DEB_PACKAGE_FILES[@]}"; do
     DEB_PACKAGES+=("${DEB_BASE_URL}${pkg_file}")
 done
 
-# === Preparation ===
+# Preparation
 mkdir -p "$WORKDIR"
 # Clean previous
 rm -rf "$WORKDIR"/iso
@@ -46,7 +46,7 @@ umount "$WORKDIR/mnt"
 # Post-Installation Script
 cp styx-postinst.sh "$WORKDIR/iso"
 
-# === Copy preseed.cfg ===
+# Copy preseed.cfg
 if [ -f "$PRESEED_FILE" ]; then
     echo "[*] Copying preseed.cfg..."
     cp "$PRESEED_FILE" "$WORKDIR/iso/preseed.cfg"
@@ -55,7 +55,7 @@ else
     exit 1
 fi
 
-# === Download DEB packages ===
+# Download DEB packages
 echo "[*] Downloading DEB packages ..."
 
 mkdir -p "$CUSTOM_PACKAGES_DIR"
@@ -96,7 +96,7 @@ if [ "$download_failed" -ne 0 ]; then
     exit 1
 fi
 
-# === Add custom packages (.deb) ===
+# Add custom packages (.deb)
 if compgen -G "$CUSTOM_PACKAGES_DIR/*.deb" > /dev/null; then
     echo "[*] Adding custom packages..."
     mkdir -p "$WORKDIR/iso/pool/extras"
@@ -116,7 +116,7 @@ else
     echo "[!] No custom .deb packages found in $CUSTOM_PACKAGES_DIR"
 fi
 
-# === Modify boot menu (isolinux) ===
+# Modify boot menu (isolinux)
 TXT_CFG="$WORKDIR/iso/isolinux/txt.cfg"
 if grep -q "label install" "$TXT_CFG"; then
     echo "[*] Modifying boot menu to use preseed.cfg..."
@@ -202,7 +202,7 @@ rm -rf "$WORKDIR/non-free-firmware/n/nvidia-graphics-drivers-tesla-*"
 rm -rf "$WORKDIR/pool/main/x/xserver-xorg*"
 rm -rf "$WORKDIR/pool/main/l/linux-signed-amd64/linux-*"
 
-# === Create new hybrid ISO ===
+# Create new hybrid ISO
 echo "[*] Creating new final ISO..."
 
 xorriso -as mkisofs \
