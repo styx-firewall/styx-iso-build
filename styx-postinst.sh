@@ -25,13 +25,34 @@ if [ -n "$IFACE" ]; then
     MAC_ADDR=$(cat /sys/class/net/"$IFACE"/address 2>/dev/null)
 
     if [ -n "$IP_CIDR" ] && [ -n "$GATEWAY" ]; then
+        # Capture nameservers from resolv.conf (may have multiple)
+        NAMESERVERS=()
+        while IFS= read -r line; do
+            NAMESERVERS+=("$line")
+        done < <(grep -E '^nameserver' /etc/resolv.conf | awk '{print $2}')
+
+        # Capture domain/search from resolv.conf (prefer 'domain' over 'search')
+        DOMAIN=$(grep -E '^(domain|search) ' /etc/resolv.conf | head -1 | awk '{print $2}')
+
+        # Build nameservers JSON array
+        NS_JSON="[]"
+        if [ ${#NAMESERVERS[@]} -gt 0 ]; then
+            NS_JSON="[\"${NAMESERVERS[0]}\""
+            for ((i=1; i<${#NAMESERVERS[@]}; i++)); do
+                NS_JSON+=",\"${NAMESERVERS[$i]}\""
+            done
+            NS_JSON+="]"
+        fi
+
         cat > /etc/styx/first_boot_seed.json <<EOF
 {
   "network": {
     "address": "${IP_CIDR}",
     "gateway": "${GATEWAY}",
     "interface": "${IFACE}",
-    "mac": "${MAC_ADDR}"
+    "mac": "${MAC_ADDR}",
+    "nameservers": ${NS_JSON},
+    "domain": "${DOMAIN}"
   }
 }
 EOF
