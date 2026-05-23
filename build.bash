@@ -34,7 +34,6 @@ done
 mkdir -p "$WORKDIR"
 # Clean previous
 rm -rf "$WORKDIR"/iso
-#rm -f "$CUSTOM_PACKAGES_DIR"/*
 mkdir -p "$WORKDIR/mnt"
 mount -o loop "$BASE_ISO" "$WORKDIR/mnt"
 
@@ -68,7 +67,6 @@ if [[ "$clean_custom_dir" =~ ^[Yy]$ ]]; then
     echo "Cleaning $CUSTOM_PACKAGES_DIR ..."
     rm -f "$CUSTOM_PACKAGES_DIR"/*
 fi
-
 
 # Download and verify each .deb file
 download_failed=0
