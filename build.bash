@@ -60,7 +60,7 @@ echo "[*] Downloading DEB packages ..."
 
 mkdir -p "$CUSTOM_PACKAGES_DIR"
 # To avoid set -e error on timeout
-if ! read -t 5 -p "Clean the custom packages directory ($CUSTOM_PACKAGES_DIR)? [y/N]: " clean_custom_dir; then
+if ! read -t 7 -p "Clean the custom packages directory ($CUSTOM_PACKAGES_DIR)? [Y/n]: " clean_custom_dir; then
     clean_custom_dir="y"
 fi
 clean_custom_dir=${clean_custom_dir:-N}
