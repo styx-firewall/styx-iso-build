@@ -199,28 +199,28 @@ apt remove --purge -y linux-image-amd64
 # Trigger update-grub due to os-release change
 update-grub
 
-# El resize de /home NO se hace in-target (LVM se cuelga en chroot).
-# Se realiza en el primer arranque mediante un servicio systemd oneshot.
-cat > /etc/systemd/system/styx-resize-home.service <<'EOF'
+# Create systemd service to resize /var/tmp LV on first boot
+cat > /etc/systemd/system/styx-resize-vartmp.service <<'EOF'
 [Unit]
-Description=Resize /home LV to 512M (first boot only)
+Description=Resize /var/tmp LV to 512M (first boot only)
 DefaultDependencies=false
-Before=local-fs.target home.mount
+Before=local-fs.target var-tmp.mount
 After=lvm2-activation.service
 
 [Service]
 Type=oneshot
 RemainAfterExit=no
-ExecStartPre=/usr/sbin/e2fsck -f -y /dev/vg_styx/home
-ExecStart=/usr/sbin/lvreduce --resizefs -L 512M /dev/vg_styx/home
-ExecStartPost=/usr/bin/systemctl disable styx-resize-home.service
-ExecStartPost=/usr/bin/rm -f /etc/systemd/system/styx-resize-home.service
+# Self-cleanup first (with '-' to ignore errors), then resize
+ExecStartPre=-/usr/bin/systemctl disable styx-resize-vartmp.service
+ExecStartPre=-/usr/bin/rm -f /etc/systemd/system/styx-resize-vartmp.service
+ExecStartPre=/usr/sbin/e2fsck -f -y /dev/vg_styx/var_tmp
+ExecStart=/usr/sbin/lvreduce --resizefs -L 512M /dev/vg_styx/var_tmp
 
 [Install]
 WantedBy=local-fs.target
 EOF
-chmod 644 /etc/systemd/system/styx-resize-home.service
-systemctl enable styx-resize-home.service
+chmod 644 /etc/systemd/system/styx-resize-vartmp.service
+systemctl enable styx-resize-vartmp.service
 
 # Compliance
 systemctl mask ctrl-alt-del.target
