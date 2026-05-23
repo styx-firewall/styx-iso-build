@@ -199,6 +199,9 @@ apt remove --purge -y linux-image-amd64
 # Trigger update-grub due to os-release change
 update-grub
 
+# Harden /var/tmp mount options (replace 'defaults' with noexec,nodev,nosuid)
+sed -i '\|/var/tmp|s|defaults|noexec,nodev,nosuid|' /etc/fstab
+
 # Create systemd service to resize /var/tmp LV on first boot
 cat > /etc/systemd/system/styx-resize-vartmp.service <<'EOF'
 [Unit]
@@ -213,8 +216,8 @@ RemainAfterExit=no
 # Self-cleanup first (with '-' to ignore errors), then resize
 ExecStartPre=-/usr/bin/systemctl disable styx-resize-vartmp.service
 ExecStartPre=-/usr/bin/rm -f /etc/systemd/system/styx-resize-vartmp.service
-ExecStartPre=/usr/sbin/e2fsck -f -y /dev/vg_styx/var_tmp
-ExecStart=/usr/sbin/lvreduce --resizefs -L 512M /dev/vg_styx/var_tmp
+ExecStartPre=/usr/sbin/e2fsck -f -y /dev/vg_styx/vartmp
+ExecStart=/usr/sbin/lvreduce --resizefs -L 512M /dev/vg_styx/vartmp
 
 [Install]
 WantedBy=local-fs.target
