@@ -324,6 +324,7 @@ systemctl mask ifupdown-wait-online.service ifupdown-pre.service ifup@.service |
 systemctl mask networking.service || true
 systemctl mask systemd-networkd.service systemd-networkd-wait-online.service || true
 systemctl mask NetworkManager.service NetworkManager-wait-online.service || true
+systemctl mask nftables.service || true
 
 # Setup styx es network-online target
 rm -f /etc/systemd/system/network-online.target.wants/networking.service

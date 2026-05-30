@@ -62,8 +62,9 @@ mkdir -p "$CUSTOM_PACKAGES_DIR"
 if ! read -t 7 -p "Clean the custom packages directory ($CUSTOM_PACKAGES_DIR)? [Y/n]: " clean_custom_dir; then
     clean_custom_dir="y"
 fi
-clean_custom_dir=${clean_custom_dir:-N}
-if [[ "$clean_custom_dir" =~ ^[Yy]$ ]]; then
+clean_custom_dir=${clean_custom_dir:-y}
+clean_custom_dir=${clean_custom_dir//[[:space:]]/}
+if [[ "${clean_custom_dir,,}" =~ ^(y|yes)$ ]]; then
     echo "Cleaning $CUSTOM_PACKAGES_DIR ..."
     rm -f "$CUSTOM_PACKAGES_DIR"/*
 fi
