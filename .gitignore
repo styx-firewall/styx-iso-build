@@ -6,3 +6,5 @@
 !build.bash
 !preseed.cfg
 !styx-postinst.sh
+!resources
+!resources/*

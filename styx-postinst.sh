@@ -133,7 +133,7 @@ copy_if_exists "$CFG_DIR/rsyslog.conf" /etc/rsyslog.conf
 chmod 644 /etc/rsyslog.conf
 copy_if_exists "$CFG_DIR/udhcpc.conf" /etc/udhcpc/default.script
 chmod 644 /etc/udhcpc/default.script
-copy if exists "$CFG_DIR/igmproxy.service" /etc/systemd/system/igmpproxy.service
+copy if exists "$CFG_DIR/igmpproxy.service" /etc/systemd/system/igmpproxy.service
 chmod 644 /etc/systemd/system/igmpproxy.service
 
 mkdir -p /etc/styx

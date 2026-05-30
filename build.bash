@@ -42,6 +42,39 @@ mkdir -p "$WORKDIR/iso"
 rsync -a --exclude=TRANS.TBL "$WORKDIR/mnt/" "$WORKDIR/iso/"
 umount "$WORKDIR/mnt"
 
+# Reemplazar logos de Debian por los de STYX
+echo "[*] Replacing Debian branding with STYX..."
+
+if [ -f "resources/logo.png" ]; then
+    PROJECT_DIR="$(pwd)"
+
+    # 1. Reemplazar logo del header del instalador gráfico (dentro del initrd)
+    echo "  - Extracting initrd (graphical installer)..."
+    INITRD_DIR="$WORKDIR/iso/install.amd/gtk/initrd_dir"
+    mkdir -p "$INITRD_DIR"
+    cd "$INITRD_DIR"
+    zcat ../initrd.gz | cpio -idm 2>/dev/null
+
+    echo "  - Replacing logo files inside initrd..."
+    # logo_debian.png: 800x75, RGB (tema claro)
+    convert "$PROJECT_DIR/resources/logo.png" -resize 75x75 -background white -gravity center -extent 800x75 "usr/share/graphics/logo_debian.png"
+    # logo_debian_dark.png: 800x75, RGB (tema oscuro)
+    convert "$PROJECT_DIR/resources/logo.png" -resize 75x75 -background '#2d2d2d' -gravity center -extent 800x75 "usr/share/graphics/logo_debian_dark.png"
+    # Los symlinks (logo_installer.png -> logo_debian.png) se mantienen intactos
+
+    echo "  - Repacking initrd..."
+    find . | cpio -o -H newc 2>/dev/null | gzip -9 > ../initrd.gz
+    cd "$PROJECT_DIR"
+    rm -rf "$INITRD_DIR"
+
+    # 2. Reemplazar logos sueltos en /pics/ (por si acaso)
+    convert "$PROJECT_DIR/resources/logo.png" -resize 94x94 -background none -gravity center -extent 211x94 "$WORKDIR/iso/pics/debian-61.png"
+
+    echo "  - STYX logos applied successfully"
+else
+    echo "[!] resources/logo.png not found, skipping logo replacement."
+fi
+
 # Post-Installation Script
 cp styx-postinst.sh "$WORKDIR/iso"
 
