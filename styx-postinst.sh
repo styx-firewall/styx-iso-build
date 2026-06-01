@@ -1,5 +1,5 @@
 #!/bin/bash
-# v0.15
+# v0.14
 
 set +e  # Continue on error (do not halt)
 
@@ -117,8 +117,8 @@ if ! id admin &>/dev/null; then
     useradd -m -s /bin/bash admin
     # If a valid access_token was provided, use its first block (8 hex chars) as password
     if [ -n "$ACCESS_TOKEN" ]; then
-        ADMIN_PASS="${ACCESS_TOKEN%%-*}"
-        echo "  -> Using first block of access_token as admin password"
+        ADMIN_PASS="${ACCESS_TOKEN##*-}"
+        echo "  -> Using last block of access_token as admin password"
     else
         ADMIN_PASS="admin"
     fi
@@ -254,7 +254,7 @@ cat > /etc/systemd/system/styx-resize-vartmp.service <<'EOF'
 [Unit]
 Description=Resize /var/tmp LV to 512M (first boot only)
 DefaultDependencies=false
-After=lvm2-activation.service
+After=lvm2-activation.service local-fs.target
 Before=var-tmp.mount
 ConditionPathExists=!/etc/styx/.vartmp-resized
 
@@ -375,5 +375,7 @@ systemctl mask nftables.service || true
 # Setup styx es network-online target
 rm -f /etc/systemd/system/network-online.target.wants/networking.service
 ln -sf /lib/systemd/system/styx-gateway.service /etc/systemd/system/network-online.target.wants/styx-gateway.service
+# BPF tools
+#apt-get install  bpfcc-tools libbpfcc libbpfcc-dev
 # BPF tools
 #apt-get install  bpfcc-tools libbpfcc libbpfcc-dev
