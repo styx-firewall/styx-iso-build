@@ -1,5 +1,5 @@
 #!/bin/bash
-# v0.14
+# v0.15
 
 set +e  # Continue on error (do not halt)
 
@@ -254,7 +254,7 @@ cat > /etc/systemd/system/styx-resize-vartmp.service <<'EOF'
 [Unit]
 Description=Resize /var/tmp LV to 512M (first boot only)
 DefaultDependencies=false
-After=lvm2-activation.service local-fs.target
+After=lvm2-activation.service
 Before=var-tmp.mount
 ConditionPathExists=!/etc/styx/.vartmp-resized
 
