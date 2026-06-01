@@ -7,6 +7,22 @@ echo "Running post-installation script..."
 export DEBIAN_FRONTEND=noninteractive
 
 # ---------------------------------------------------------------------------
+# Capture access_token from kernel cmdline and clean any trace
+# ---------------------------------------------------------------------------
+ACCESS_TOKEN=$(grep -oP 'access_token=\K\S+' /proc/cmdline 2>/dev/null || echo "")
+if [ -n "$ACCESS_TOKEN" ]; then
+    # Basic UUID validation: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+    if echo "$ACCESS_TOKEN" | grep -qiP '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'; then
+        echo "Access token detected from kernel cmdline (valid UUID)"
+    else
+        echo "[!] access_token provided but is not a valid UUID format, ignoring"
+        ACCESS_TOKEN=""
+    fi
+else
+    echo "No access_token found in kernel cmdline"
+fi
+
+# ---------------------------------------------------------------------------
 # Capture network configuration from the installer for first boot seed
 # ---------------------------------------------------------------------------
 echo "Capturing network configuration..."
@@ -44,6 +60,14 @@ if [ -n "$IFACE" ]; then
             NS_JSON+="]"
         fi
 
+        # Build JSON with network + optional access_token
+        NL=$'\n'
+        if [ -n "$ACCESS_TOKEN" ]; then
+            TOKEN_LINE=",${NL}  \"access_token\": \"${ACCESS_TOKEN}\""
+        else
+            TOKEN_LINE=""
+        fi
+
         cat > /etc/styx/first_boot_seed.json <<EOF
 {
   "network": {
@@ -53,16 +77,30 @@ if [ -n "$IFACE" ]; then
     "mac": "${MAC_ADDR}",
     "nameservers": ${NS_JSON},
     "domain": "${DOMAIN}"
-  }
+  }${TOKEN_LINE}
 }
 EOF
         chmod 600 /etc/styx/first_boot_seed.json
         echo "  -> Saved: IP=${IP_CIDR}, Gateway=${GATEWAY}, MAC=${MAC_ADDR} (interface ${IFACE})"
+        if [ -n "$ACCESS_TOKEN" ]; then
+            echo "  -> Access token saved in first_boot_seed.json"
+        fi
     else
         echo "  -> Warning: Could not determine IP or gateway for interface ${IFACE}"
     fi
 else
     echo "  -> Warning: No default route found, network config not saved"
+fi
+
+# If no network config was saved but we have a token, save it anyway
+if [ ! -f /etc/styx/first_boot_seed.json ] && [ -n "$ACCESS_TOKEN" ]; then
+    cat > /etc/styx/first_boot_seed.json <<EOF
+{
+  "access_token": "${ACCESS_TOKEN}"
+}
+EOF
+    chmod 600 /etc/styx/first_boot_seed.json
+    echo "  -> Access token saved (no network config available)"
 fi
 
 # Configure STYX repository
@@ -74,10 +112,17 @@ chmod 644 /etc/apt/sources.list.d/styx.list
 # Clean package cache
 apt-get clean
 
-# Create user 'admin' with password 'admin'
+# Create user 'admin'
 if ! id admin &>/dev/null; then
     useradd -m -s /bin/bash admin
-    echo "admin:admin" | chpasswd
+    # If a valid access_token was provided, use its first block (8 hex chars) as password
+    if [ -n "$ACCESS_TOKEN" ]; then
+        ADMIN_PASS="${ACCESS_TOKEN%%-*}"
+        echo "  -> Using first block of access_token as admin password"
+    else
+        ADMIN_PASS="admin"
+    fi
+    echo "admin:${ADMIN_PASS}" | chpasswd
     usermod -aG sudo admin
 fi
 
@@ -133,7 +178,7 @@ copy_if_exists "$CFG_DIR/rsyslog.conf" /etc/rsyslog.conf
 chmod 644 /etc/rsyslog.conf
 copy_if_exists "$CFG_DIR/udhcpc.conf" /etc/udhcpc/default.script
 chmod 644 /etc/udhcpc/default.script
-copy if exists "$CFG_DIR/igmpproxy.service" /etc/systemd/system/igmpproxy.service
+copy_if_exists "$CFG_DIR/igmpproxy.service" /etc/systemd/system/igmpproxy.service
 chmod 644 /etc/systemd/system/igmpproxy.service
 
 mkdir -p /etc/styx
@@ -215,11 +260,13 @@ After=lvm2-activation.service
 [Service]
 Type=oneshot
 RemainAfterExit=no
-# Self-cleanup first (with '-' to ignore errors), then resize
+# Cleanup primero (siempre se ejecuta, tenga exito o falle)
 ExecStartPre=-/usr/bin/systemctl disable styx-resize-vartmp.service
 ExecStartPre=-/usr/bin/rm -f /etc/systemd/system/styx-resize-vartmp.service
-ExecStartPre=/usr/sbin/e2fsck -f -y /dev/vg_styx/vartmp
-ExecStart=/usr/sbin/lvreduce --resizefs -L 512M /dev/vg_styx/vartmp
+ExecStartPre=-/usr/bin/systemctl daemon-reload
+# Luego el trabajo
+ExecStartPre=-/usr/sbin/e2fsck -f -y /dev/vg_styx/vartmp
+ExecStart=-/usr/sbin/lvreduce --resizefs -L 512M /dev/vg_styx/vartmp
 
 [Install]
 WantedBy=local-fs.target
