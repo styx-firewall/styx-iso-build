@@ -254,22 +254,21 @@ cat > /etc/systemd/system/styx-resize-vartmp.service <<'EOF'
 [Unit]
 Description=Resize /var/tmp LV to 512M (first boot only)
 DefaultDependencies=false
-Before=local-fs.target var-tmp.mount
-After=lvm2-activation.service
+After=lvm2-activation.service local-fs.target
+Before=var-tmp.mount
+ConditionPathExists=!/etc/styx/.vartmp-resized
 
 [Service]
 Type=oneshot
-RemainAfterExit=no
-# Cleanup primero (siempre se ejecuta, tenga exito o falle)
+RemainAfterExit=yes
 ExecStartPre=-/usr/bin/systemctl disable styx-resize-vartmp.service
-ExecStartPre=-/usr/bin/rm -f /etc/systemd/system/styx-resize-vartmp.service
-ExecStartPre=-/usr/bin/systemctl daemon-reload
-# Luego el trabajo
-ExecStartPre=-/usr/sbin/e2fsck -f -y /dev/vg_styx/vartmp
-ExecStart=-/usr/sbin/lvreduce --resizefs -L 512M /dev/vg_styx/vartmp
+ExecStart=/usr/sbin/e2fsck -f -y /dev/vg_styx/vartmp
+ExecStart=/usr/sbin/lvreduce --resizefs -L 512M /dev/vg_styx/vartmp
+ExecStartPost=/usr/bin/touch /etc/styx/.vartmp-resized
+ExecStopPost=-/usr/bin/rm -f /etc/systemd/system/styx-resize-vartmp.service
 
 [Install]
-WantedBy=local-fs.target
+WantedBy=var-tmp.mount
 EOF
 chmod 644 /etc/systemd/system/styx-resize-vartmp.service
 systemctl enable styx-resize-vartmp.service
