@@ -10,7 +10,7 @@ NEW_ISO="styx-firewall-${STYX_VERSION}.iso"
 PRESEED_FILE="./preseed.cfg"
 
 # Base URL for DEB packages
-DEB_BASE_URL="https://github.com/styx-firewall/styx-repo/raw/main/pool/main/"
+DEB_BASE_URL="https://github.com/styx-firewall/styx-repo/raw/main/pool/styx-dev/"
 
 # List of DEB package filenames
 DEB_PACKAGE_FILES=(

@@ -25,7 +25,7 @@ The `admin` user password will be set using the **last group** of the UUID:
 
 The API and tokens will be automatically enabled for remote configuration:
 
-curl -X POST https://ip.ip.ip.ip:3041/submit.php \
+curl -X POST https://x.x.x.x:3041/submit.php \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer YOUR_TOKEN_HERE" \
   -d '{"command":"add_user","username":"alice","password":"pass123"}'

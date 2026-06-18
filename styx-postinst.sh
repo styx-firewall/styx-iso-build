@@ -1,5 +1,5 @@
 #!/bin/bash
-# v0.14
+# v0.15
 
 set +e  # Continue on error (do not halt)
 
@@ -242,6 +242,7 @@ apt remove --purge -y laptop-detect
 apt remove --purge -y dhcpcd-base
 # Make sure default meta-package is removed to avoid unwanted upgrades
 apt remove --purge -y linux-image-amd64
+apt remove --purge -y ifupdown
 #apt autoremove --purge -y
 # Trigger update-grub due to os-release change
 update-grub
@@ -273,8 +274,22 @@ EOF
 chmod 644 /etc/systemd/system/styx-resize-vartmp.service
 systemctl enable styx-resize-vartmp.service
 
+# ---------------------------------------------------------------------------
+# Helper: mask a systemd unit only if it exists
+# ---------------------------------------------------------------------------
+mask_if_exists() {
+  for unit in "$@"; do
+    if systemctl list-unit-files "$unit" &>/dev/null; then
+      echo "  -> Masking unit: $unit"
+      systemctl mask "$unit"
+    else
+      echo "  -> Unit $unit not found, skipping mask"
+    fi
+  done
+}
+
 # Compliance
-systemctl mask ctrl-alt-del.target
+mask_if_exists ctrl-alt-del.target
 
 # Blacklist unused/unwanted kernel modules for security hardening
 BLACKLIST_DIR=/etc/modprobe.d
@@ -365,12 +380,15 @@ apt-get -o Dpkg::Options::="--force-confold" install -y ccze
 rm -f /var/log/README
 
 # Styx provide network-online
+# Remove services
+rm -f /etc/systemd/system/networking.service
+rm -f /etc/systemd/system/NetworkManager.service
 # Disable network managers
-systemctl mask ifupdown-wait-online.service ifupdown-pre.service ifup@.service || true
-systemctl mask networking.service || true
-systemctl mask systemd-networkd.service systemd-networkd-wait-online.service || true
-systemctl mask NetworkManager.service NetworkManager-wait-online.service || true
-systemctl mask nftables.service || true
+mask_if_exists ifupdown-wait-online.service ifupdown-pre.service ifup@.service
+mask_if_exists networking.service
+mask_if_exists systemd-networkd.service systemd-networkd-wait-online.service
+mask_if_exists NetworkManager.service NetworkManager-wait-online.service
+mask_if_exists nftables.service
 
 # Setup styx es network-online target
 rm -f /etc/systemd/system/network-online.target.wants/networking.service
