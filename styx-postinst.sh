@@ -255,8 +255,9 @@ cat > /etc/systemd/system/styx-resize-vartmp.service <<'EOF'
 [Unit]
 Description=Resize /var/tmp LV to 512M (first boot only)
 DefaultDependencies=false
-After=lvm2-activation.service local-fs.target
+After=lvm2-activation.service
 Before=var-tmp.mount
+Before=local-fs.target
 ConditionPathExists=!/etc/styx/.vartmp-resized
 
 [Service]
@@ -383,6 +384,11 @@ rm -f /var/log/README
 # Remove services
 rm -f /etc/systemd/system/networking.service
 rm -f /etc/systemd/system/NetworkManager.service
+# Some cleanup
+rm -f /var/www/html/index.lighttpd.html
+rm -f /var/log/README
+rmdir /var/log/runit/ssh
+rmdir /var/log/runit
 # Disable network managers
 mask_if_exists ifupdown-wait-online.service ifupdown-pre.service ifup@.service
 mask_if_exists networking.service
