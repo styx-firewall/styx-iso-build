@@ -2,16 +2,16 @@
 
 ## Installation
 
-After installation, Styx will keep the network interface configuration static. If a DHCP network was used during installation, that IP will be set as static.
+If a DHCP network was used during installation, that IP will be set as static on next boot.
 
 In installations without DHCP, if an IP and gateway were provided, they will be kept.
 
 If something goes wrong, the fallback IP will be **192.168.100.1** on the first interface detected
 
 The default UI port is **3041**.
-The service ssh will be in the default port **22**
+The SSH service will be on the default port **22**
 
-Default username/password is admin/admin
+Default username/password is `admin`/`admin`
 
 ## Secure Installation
 
@@ -44,7 +44,12 @@ If you're using Proxmox, here's what to keep in mind when creating the VM:
 
 - **Machine type**: pick **Q35**
 - **BIOS**: use **OVMF (UEFI)** — you'll need to add a small EFI disk
+  - ⚠️ **Important**: disable `pre-enrolled-keys` when adding the EFI disk, otherwise Secure Boot will block the custom kernel (`pre-enrolled-keys=0`)
 - **CPU**: **2 cores** at least; select `host` type for best performance
 - **RAM**: **4 GB** fixed (don't use ballooning)
-- **Disk**: **15 GB** is more than enough, with a **virtio-scsi-single** controller
-- **Network**: probably you'll need at least **two network cards** — one for WAN (internet) and one for LAN
+- **Disk**: **10 GB** is the minimum, less will work but will not add the right partitions (fallback to default partitions system)
+- **Network**: you'll probably need at least **two network cards** — one for WAN (internet) and one for LAN
+
+## Partitions
+
+By default, several LVM partitions are created, taking approximately 8 GB in LVM, with the rest allocated to other non-LVM system partitions. Any remaining available space is left unallocated for the administrator to assign as they see fit.

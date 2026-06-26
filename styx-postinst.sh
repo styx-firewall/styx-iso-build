@@ -129,7 +129,7 @@ fi
 apt-get update
 # Ensure styx is installed
 apt-get install -y styx-conf
-# apt-get install -y styx-firewall
+apt-get install -y styx-firewall
 
 # Copy custom initial config files (copy only if source exists)
 CFG_DIR=/var/lib/styx/configs
