@@ -46,9 +46,9 @@ If you're using Proxmox, here's what to keep in mind when creating the VM:
 - **BIOS**: use **OVMF (UEFI)** — you'll need to add a small EFI disk
   - ⚠️ **Important**: disable `pre-enrolled-keys` when adding the EFI disk, otherwise Secure Boot will block the custom kernel (`pre-enrolled-keys=0`)
 - **CPU**: **2 cores** at least; select `host` type for best performance
-- **RAM**: **4 GB** fixed (don't use ballooning)
-- **Disk**: **10 GB** is the minimum, less will work but will not add the right partitions (fallback to default partitions system)
-- **Network**: you'll probably need at least **two network cards** — one for WAN (internet) and one for LAN
+- **RAM**: **4 GB** (fixed don't use ballooning)
+- **Disk**: **10 GB** is the minimum, less will work but will not add the right partitions (fallback to default/basic partitions system)
+- **Network**: since it is a router/firewall you'll probably need at least **two network cards**
 
 ## Partitions
 
