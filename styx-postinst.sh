@@ -11,11 +11,11 @@ export DEBIAN_FRONTEND=noninteractive
 # ---------------------------------------------------------------------------
 ACCESS_TOKEN=$(grep -oP 'access_token=\K\S+' /proc/cmdline 2>/dev/null || echo "")
 if [ -n "$ACCESS_TOKEN" ]; then
-    # Basic UUID validation: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
-    if echo "$ACCESS_TOKEN" | grep -qiP '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'; then
-        echo "Access token detected from kernel cmdline (valid UUID)"
+    # Base64url validation: 32 random bytes → 43 chars (A-Za-z0-9_-)
+    if echo "$ACCESS_TOKEN" | grep -qiP '^[A-Za-z0-9_-]{43}$'; then
+        echo "Access token detected from kernel cmdline (valid 256-bit token)"
     else
-        echo "[!] access_token provided but is not a valid UUID format, ignoring"
+        echo "[!] access_token provided is not a valid 256-bit base64url token (43 chars), ignoring"
         ACCESS_TOKEN=""
     fi
 else
@@ -115,10 +115,10 @@ apt-get clean
 # Create user 'admin'
 if ! id admin &>/dev/null; then
     useradd -m -s /bin/bash admin
-    # If a valid access_token was provided, use its first block (8 hex chars) as password
+    # If a valid access_token was provided, use its last 12 chars as password
     if [ -n "$ACCESS_TOKEN" ]; then
-        ADMIN_PASS="${ACCESS_TOKEN##*-}"
-        echo "  -> Using last block of access_token as admin password"
+        ADMIN_PASS="${ACCESS_TOKEN: -12}"
+        echo "  -> Using last 12 chars of access_token as admin password"
     else
         ADMIN_PASS="admin"
     fi
@@ -127,8 +127,9 @@ if ! id admin &>/dev/null; then
 fi
 
 apt-get update
-# Ensure styx-conf is installed
+# Ensure styx is installed
 apt-get install -y styx-conf
+apt-get install -y styx-firewall
 
 # Copy custom initial config files (copy only if source exists)
 CFG_DIR=/var/lib/styx/configs

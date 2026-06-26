@@ -15,13 +15,15 @@ Default username/password is admin/admin
 
 ## Secure Installation
 
-The secure installation requires providing the `access_token=<uuid>` variable in the kernel boot parameters.
+The secure installation requires providing the `access_token=<base64url-token>` variable in the kernel boot parameters. The token must be a **256-bit (32 bytes) random value encoded in base64url** (43 characters, no padding).
+
+If the token is missing or invalid, the installation continues normally with the default credentials (`admin`/`admin`).
 
 Example kernel cmdline:
-    BOOT_IMAGE=/vmlinuz root=/dev/vg_styx/root ro .... access_token=550e8400-e29b-41d4-a716-446655440000
+    BOOT_IMAGE=/vmlinuz root=/dev/vg_styx/root ro .... access_token=abc123def456ghi789jkl012mno345pqr678stu9vwx
 
-The `admin` user password will be set using the **last group** of the UUID:
-    Example: with UUID `550e8400-e29b-41d4-a716-446655440000`, the password will be `446655440000`
+The `admin` user password will be set using the **last 12 characters** of the token:
+    Example: with token `abc123def456ghi789jkl012mno345pqr678stu9vwx`, the password will be `qr678stu9vwx`
 
 The API and tokens will be automatically enabled for remote configuration:
 
