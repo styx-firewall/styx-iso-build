@@ -2,7 +2,7 @@
 set -e
 
 # Configuration
-STYX_VERSION="0.11"
+STYX_VERSION="0.12"
 BASE_ISO="debian-13.4.0-amd64-netinst.iso"
 CUSTOM_PACKAGES_DIR="./packages"
 WORKDIR="./iso_build"
