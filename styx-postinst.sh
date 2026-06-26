@@ -263,7 +263,6 @@ ConditionPathExists=!/etc/styx/.vartmp-resized
 
 [Service]
 Type=oneshot
-RemainAfterExit=yes
 ExecStartPre=-/usr/bin/systemctl disable styx-resize-vartmp.service
 ExecStart=/usr/sbin/e2fsck -f -y /dev/vg_styx/vartmp
 ExecStart=/usr/sbin/lvreduce --resizefs -L 512M /dev/vg_styx/vartmp
