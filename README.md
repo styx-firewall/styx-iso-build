@@ -37,3 +37,14 @@ curl -X POST https://x.x.x.x:3041/submit.php \
 
     Open a browser at https://ip.ip.ip.ip:3041 and log in with user 'admin' and the password
     according to the installation method. Note: The 'root' user does not have access to the UI.
+
+## Proxmox VM — How to set it up
+
+If you're using Proxmox, here's what to keep in mind when creating the VM:
+
+- **Machine type**: pick **Q35**
+- **BIOS**: use **OVMF (UEFI)** — you'll need to add a small EFI disk
+- **CPU**: **2 cores** at least; select `host` type for best performance
+- **RAM**: **4 GB** fixed (don't use ballooning)
+- **Disk**: **15 GB** is more than enough, with a **virtio-scsi-single** controller
+- **Network**: probably you'll need at least **two network cards** — one for WAN (internet) and one for LAN
