@@ -18,10 +18,10 @@ DEB_PACKAGE_FILES=(
     "linux-headers-styx.deb"
     "linux-headers-6.12.87-15-styx_15_amd64.deb"
     "linux-image-6.12.87-15-styx_15_amd64.deb"
-    "styx-conf-0.1-13.deb"
-    "styx-gateway-0.1-13.deb"
-    "styx-ui-0.1-13.deb"
-    "styx-firewall-0.1-13.deb"
+    "styx-conf-0.1-15.deb"
+    "styx-gateway-0.1-15.deb"
+    "styx-ui-0.1-15.deb"
+    "styx-firewall-0.1-15.deb"
 )
 
 # Construct full URLs for DEB packages
