@@ -400,7 +400,7 @@ mask_if_exists nftables.service
 # Setup styx es network-online target
 rm -f /etc/systemd/system/network-online.target.wants/networking.service
 ln -sf /lib/systemd/system/styx-gateway.service /etc/systemd/system/network-online.target.wants/styx-gateway.service
-# BPF tools
-#apt-get install  bpfcc-tools libbpfcc libbpfcc-dev
-# BPF tools
-#apt-get install  bpfcc-tools libbpfcc libbpfcc-dev
+
+# Lock root account (password was only for automated install)
+passwd -l root
+echo "Root account locked (sudo only via admin)"
