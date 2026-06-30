@@ -154,6 +154,7 @@ copy_if_exists "$CFG_DIR/lr-chrony" /etc/logrotate.d/chrony
 copy_if_exists "$CFG_DIR/lr-wtmp" /etc/logrotate.d/wtmp
 copy_if_exists "$CFG_DIR/lr-wtmpdb" /etc/logrotate.d/wtmpdb
 copy_if_exists "$CFG_DIR/lr-styx" /etc/logrotate.d/styx
+copy_if_exists "$CFG_DIR/lr-styx-ui" /etc/logrotate.d/styx-ui
 copy_if_exists "$CFG_DIR/lr-apt" /etc/logrotate.d/apt
 chmod 644 /etc/logrotate.d/*
 
@@ -190,6 +191,11 @@ chmod 600 /etc/styx/startup-certs.json
 mkdir -p /etc/systemd/system/tmp.mount.d
 copy_if_exists "$CFG_DIR/tmp.conf" /etc/systemd/system/tmp.mount.d/override.conf
 chmod 644 /etc/systemd/system/tmp.mount.d/override.conf
+
+# Create styx-ui log file
+touch /var/log/styx-ui.log
+chgrp www-data /var/log/styx-ui.log
+chmod 660 /var/log/styx-ui.log
 
 # Be sure services are enabled
 systemctl enable ssh
