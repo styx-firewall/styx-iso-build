@@ -2,7 +2,11 @@
 set -e
 
 # Configuration
-STYX_VERSION="0.12"
+STYX_VERSION="0.13"
+STYX_PKG_VERSION="0.1-17"
+STYX_BRANCH="styx-dev"
+#STYX_BRANCH="styx-test"
+STYX_KERNEL_VER="6.12.87-15-styx_15"
 BASE_ISO="debian-13.4.0-amd64-netinst.iso"
 CUSTOM_PACKAGES_DIR="./packages"
 WORKDIR="./iso_build"
@@ -10,18 +14,18 @@ NEW_ISO="styx-firewall-${STYX_VERSION}.iso"
 PRESEED_FILE="./preseed.cfg"
 
 # Base URL for DEB packages
-DEB_BASE_URL="https://github.com/styx-firewall/styx-repo/raw/main/pool/styx-dev/"
+DEB_BASE_URL="https://github.com/styx-firewall/styx-repo/raw/main/pool/${STYX_BRANCH}/"
 
 # List of DEB package filenames
 DEB_PACKAGE_FILES=(
     "linux-image-styx.deb"
     "linux-headers-styx.deb"
-    "linux-headers-6.12.87-15-styx_15_amd64.deb"
-    "linux-image-6.12.87-15-styx_15_amd64.deb"
-    "styx-conf-0.1-15.deb"
-    "styx-gateway-0.1-15.deb"
-    "styx-ui-0.1-15.deb"
-    "styx-firewall-0.1-15.deb"
+    "linux-headers-${STYX_KERNEL_VER}_amd64.deb"
+    "linux-image-${STYX_KERNEL_VER}_amd64.deb"
+    "styx-conf-${STYX_PKG_VERSION}.deb"
+    "styx-gateway-${STYX_PKG_VERSION}.deb"
+    "styx-ui-${STYX_PKG_VERSION}.deb"
+    "styx-firewall-${STYX_PKG_VERSION}.deb"
 )
 
 # Construct full URLs for DEB packages
@@ -170,7 +174,7 @@ label auto-install-styx
 EOF
 
 # 5. Modify graphical menu (UEFI)
-cat > $WORKDIR/iso/boot/grub/grub.cfg <<EOF
+cat > $WORKDIR/iso/boot/grub/grub.cfg <<'EOF'
 if [ x$feature_default_font_path = xy ] ; then
    font=unicode
 else

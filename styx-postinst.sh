@@ -1,5 +1,5 @@
 #!/bin/bash
-# v0.16
+# v0.17
 
 set +e  # Continue on error (do not halt)
 
