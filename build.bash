@@ -2,10 +2,10 @@
 set -e
 
 # Configuration
-STYX_VERSION="0.13"
+STYX_VERSION="0.14"
 STYX_PKG_VERSION="0.1-17"
-STYX_BRANCH="styx-dev"
-#STYX_BRANCH="styx-test"
+#STYX_BRANCH="styx-dev"
+STYX_BRANCH="styx-test"
 STYX_KERNEL_VER="6.12.87-15-styx_15"
 BASE_ISO="debian-13.4.0-amd64-netinst.iso"
 CUSTOM_PACKAGES_DIR="./packages"
@@ -80,7 +80,10 @@ else
 fi
 
 # Post-Installation Script
+sed -i "s/__STYX_BRANCH__/${STYX_BRANCH}/g" styx-postinst.sh
 cp styx-postinst.sh "$WORKDIR/iso"
+# Restaurar el placeholder en el fuente
+sed -i "s/${STYX_BRANCH}/__STYX_BRANCH__/g" styx-postinst.sh
 
 # Copy preseed.cfg
 if [ -f "$PRESEED_FILE" ]; then
