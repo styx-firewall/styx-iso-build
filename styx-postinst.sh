@@ -167,6 +167,19 @@ copy_if_exists "$CFG_DIR/logrotate.conf" /etc/logrotate.conf
 chmod 644 /etc/logrotate.conf
 copy_if_exists "$CFG_DIR/os-release" /etc/os-release
 chmod 644 /etc/os-release
+
+# Kernel postinst hook: restore custom os-release before update-grub runs
+# Protects against base-files overwriting /etc/os-release during apt upgrades
+mkdir -p /etc/kernel/postinst.d
+cat > /etc/kernel/postinst.d/styx-os-release <<'KERNEL_HOOK'
+#!/bin/sh
+set -e
+if [ -f /var/lib/styx/configs/os-release ]; then
+    cp /var/lib/styx/configs/os-release /etc/os-release || true
+fi
+KERNEL_HOOK
+chmod 755 /etc/kernel/postinst.d/styx-os-release
+
 # copy_if_exists "$CFG_DIR/journald.conf" /etc/systemd/journald.conf
 copy_if_exists "$CFG_DIR/motd" /etc/motd
 chmod 644 /etc/motd
