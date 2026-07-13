@@ -178,7 +178,7 @@ if [ -f /var/lib/styx/configs/os-release ]; then
     cp /var/lib/styx/configs/os-release /etc/os-release || true
 fi
 KERNEL_HOOK
-chmod 755 /etc/kernel/postinst.d/styx-os-release
+chmod +x /etc/kernel/postinst.d/styx-os-release
 
 # copy_if_exists "$CFG_DIR/journald.conf" /etc/systemd/journald.conf
 copy_if_exists "$CFG_DIR/motd" /etc/motd
