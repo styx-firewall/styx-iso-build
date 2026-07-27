@@ -3,11 +3,25 @@ set -e
 
 # Configuration
 STYX_VERSION="0.14"
-STYX_PKG_VERSION="0.1-17"
 #STYX_BRANCH="styx-dev"
 STYX_BRANCH="styx-test"
-STYX_KERNEL_VER="6.12.87-15-styx_15"
+STYX_KERNEL_VER="6.12.95-17-styx_17"
 BASE_ISO="debian-13.4.0-amd64-netinst.iso"
+
+# List of DEB package filenames
+DEB_PACKAGE_FILES=(
+    "linux-image-styx_1.6-17_amd64.deb"
+    "linux-headers-styx_1.6-17_amd64.deb"
+    "linux-headers-${STYX_KERNEL_VER}_amd64.deb"
+    "linux-image-${STYX_KERNEL_VER}_amd64.deb"
+    "styx-conf-0.2-1.deb"
+    "styx-gateway-0.42.2-1.deb"
+    "styx-ui-0.35.24-1.deb"
+    "styx-firewall-0.3-1.deb"
+)
+
+# --
+
 CUSTOM_PACKAGES_DIR="./packages"
 WORKDIR="./iso_build"
 NEW_ISO="styx-firewall-${STYX_VERSION}.iso"
@@ -15,18 +29,6 @@ PRESEED_FILE="./preseed.cfg"
 
 # Base URL for DEB packages
 DEB_BASE_URL="https://github.com/styx-firewall/styx-repo/raw/main/pool/${STYX_BRANCH}/"
-
-# List of DEB package filenames
-DEB_PACKAGE_FILES=(
-    "linux-image-styx.deb"
-    "linux-headers-styx.deb"
-    "linux-headers-${STYX_KERNEL_VER}_amd64.deb"
-    "linux-image-${STYX_KERNEL_VER}_amd64.deb"
-    "styx-conf-${STYX_PKG_VERSION}.deb"
-    "styx-gateway-${STYX_PKG_VERSION}.deb"
-    "styx-ui-${STYX_PKG_VERSION}.deb"
-    "styx-firewall-${STYX_PKG_VERSION}.deb"
-)
 
 # Construct full URLs for DEB packages
 DEB_PACKAGES=()

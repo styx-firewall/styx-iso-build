@@ -1,4 +1,4 @@
-# styx-iso-build
+# Styx FLF
 
 ## Installation
 
@@ -45,10 +45,12 @@ If you're using Proxmox, here's what to keep in mind when creating the VM:
 - **Machine type**: pick **Q35**
 - **BIOS**: use **OVMF (UEFI)** — you'll need to add a small EFI disk
   - ⚠️ **Important**: disable `pre-enrolled-keys` when adding the EFI disk, otherwise Secure Boot will block the custom kernel (`pre-enrolled-keys=0`)
-- **CPU**: **2 cores** at least; select `host` type for best performance
-- **RAM**: **4 GB** (fixed don't use ballooning)
+- **CPU**: **2-4 cores** at least; select `host` type for best performance
+- **RAM**: **4 GB**  at least (fixed ballooning is not recommended)
 - **Disk**: **10 GB** is the minimum, less will work but will not add the right partitions (fallback to default/basic partitions system)
 - **Network**: since it is a router/firewall you'll probably need at least **two network cards**
+  - For best performance passthrought the network interfaces
+  - If you're not using passthrough on the network interface, it would probably be advisable to configure multiqueue in virtio.
 
 ## Partitions
 
