@@ -132,7 +132,7 @@ apt-get install -y styx-conf
 apt-get install -y styx-firewall
 
 # Copy custom initial config files (copy only if source exists)
-CFG_DIR=/var/lib/styx/configs
+CFG_DIR=/opt/styx-gateway/files/cfg-tpl
 
 # Ensure common destination directories exist
 mkdir -p /etc/ssh /etc/lighttpd /etc/lighttpd/conf-available /etc/logrotate.d
@@ -165,26 +165,7 @@ copy_if_exists "$CFG_DIR/sshd_config" /etc/ssh/sshd_config
 chmod 600 /etc/ssh/sshd_config
 copy_if_exists "$CFG_DIR/logrotate.conf" /etc/logrotate.conf
 chmod 644 /etc/logrotate.conf
-copy_if_exists "$CFG_DIR/os-release" /etc/os-release
-chmod 644 /etc/os-release
-
-# Kernel postinst hook: restore custom os-release before update-grub runs
-# Protects against base-files overwriting /etc/os-release during apt upgrades
-mkdir -p /etc/kernel/postinst.d
-cat > /etc/kernel/postinst.d/styx-os-release <<'KERNEL_HOOK'
-#!/bin/sh
-set -e
-if [ -f /var/lib/styx/configs/os-release ]; then
-    cp /var/lib/styx/configs/os-release /etc/os-release || true
-fi
-KERNEL_HOOK
-chmod +x /etc/kernel/postinst.d/styx-os-release
-
 # copy_if_exists "$CFG_DIR/journald.conf" /etc/systemd/journald.conf
-copy_if_exists "$CFG_DIR/motd" /etc/motd
-chmod 644 /etc/motd
-copy_if_exists "$CFG_DIR/issue" /etc/issue
-chmod 644 /etc/issue
 copy_if_exists "$CFG_DIR/lighttpd.conf" /etc/lighttpd/lighttpd.conf
 chmod 644 /etc/lighttpd/lighttpd.conf
 copy_if_exists "$CFG_DIR/lighttpd-ssl.conf" /etc/lighttpd/conf-available/10-ssl.conf
