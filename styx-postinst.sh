@@ -1,5 +1,5 @@
 #!/bin/bash
-# v0.18
+# v0.19
 
 set +e  # Continue on error (do not halt)
 
@@ -128,7 +128,6 @@ fi
 
 apt-get update
 # Ensure styx is installed
-apt-get install -y styx-conf
 apt-get install -y styx-firewall
 
 # Copy custom initial config files (copy only if source exists)
@@ -499,6 +498,21 @@ mask_if_exists nftables.service
 # Setup styx es network-online target
 rm -f /etc/systemd/system/network-online.target.wants/networking.service
 ln -sf /lib/systemd/system/styx-gateway.service /etc/systemd/system/network-online.target.wants/styx-gateway.service
+
+# Overwrite os-release with STYX branding
+cat > /etc/os-release <<'OSRELEASE'
+NAME="Styx Firewall"
+VERSION="__STYX_ISO_VER__"
+ID=styx-firewall
+ID_LIKE=debian
+PRETTY_NAME="Styx Firewall __STYX_ISO_VER__"
+VERSION_ID="__STYX_ISO_VER__"
+HOME_URL="https://github.com/styx-firewall"
+SUPPORT_URL="https://github.com/styx-firewall"
+BUG_REPORT_URL="https://github.com/styx-firewall/issues"
+OSRELEASE
+chmod 644 /etc/os-release
+echo "os-release overwritten with STYX branding (version __STYX_ISO_VER__)"
 
 # Lock root account (password was only for automated install)
 passwd -l root

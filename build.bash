@@ -2,29 +2,51 @@
 set -e
 
 # Configuration
-STYX_VERSION="0.14"
-#STYX_BRANCH="styx-dev"
-STYX_BRANCH="styx-test"
+STYX_ISO_VER="0.15"
+STYX_BRANCH="styx-dev"
+#STYX_BRANCH="styx-test"
 STYX_KERNEL_VER="6.12.95-17-styx_17"
 BASE_ISO="debian-13.4.0-amd64-netinst.iso"
 
-# List of DEB package filenames
+# List of DEB package filenames (kernel packages are common to all branches)
 DEB_PACKAGE_FILES=(
     "linux-image-styx_1.6-17_amd64.deb"
     "linux-headers-styx_1.6-17_amd64.deb"
     "linux-headers-${STYX_KERNEL_VER}_amd64.deb"
     "linux-image-${STYX_KERNEL_VER}_amd64.deb"
-    "styx-conf-0.2-1.deb"
-    "styx-gateway-0.42.2-1.deb"
-    "styx-ui-0.35.24-1.deb"
-    "styx-firewall-0.3-1.deb"
 )
+
+# Branch-specific packages (latest version available in each pool)
+case "$STYX_BRANCH" in
+    styx-dev)
+        DEB_PACKAGE_FILES+=(
+            "styx-gateway-0.46.22-1.deb"
+            "styx-ui-0.39.13-1.deb"
+            "styx-firewall-0.3-2.deb"
+        )
+        ;;
+    styx-test)
+        DEB_PACKAGE_FILES+=(
+            "styx-gateway-0.42.5-1.deb"
+            "styx-ui-0.36.4-1.deb"
+            "styx-firewall-0.3-1.deb"
+        )
+        ;;
+    styx-prod)
+        # No styx-* app packages in the prod pool; they are installed
+        # from the apt repository by styx-postinst.sh
+        ;;
+    *)
+        echo "[!] Unknown STYX_BRANCH: '$STYX_BRANCH' (expected: styx-dev, styx-test or styx-prod)"
+        exit 1
+        ;;
+esac
 
 # --
 
 CUSTOM_PACKAGES_DIR="./packages"
 WORKDIR="./iso_build"
-NEW_ISO="styx-firewall-${STYX_VERSION}.iso"
+NEW_ISO="styx-firewall-${STYX_ISO_VER}.iso"
 PRESEED_FILE="./preseed.cfg"
 
 # Base URL for DEB packages
@@ -83,9 +105,11 @@ fi
 
 # Post-Installation Script
 sed -i "s/__STYX_BRANCH__/${STYX_BRANCH}/g" styx-postinst.sh
+sed -i "s/__STYX_ISO_VER__/${STYX_ISO_VER}/g" styx-postinst.sh
 cp styx-postinst.sh "$WORKDIR/iso"
-# Restaurar el placeholder en el fuente
+# Restaurar los placeholders en el fuente
 sed -i "s/${STYX_BRANCH}/__STYX_BRANCH__/g" styx-postinst.sh
+sed -i "s/${STYX_ISO_VER}/__STYX_ISO_VER__/g" styx-postinst.sh
 
 # Copy preseed.cfg
 if [ -f "$PRESEED_FILE" ]; then
@@ -119,6 +143,7 @@ for url in "${DEB_PACKAGES[@]}"; do
         echo "[*] Downloading $filename ..."
         if ! wget -O "$CUSTOM_PACKAGES_DIR/$filename" "$url"; then
             echo "[!] Error downloading $filename"
+            rm -f "$CUSTOM_PACKAGES_DIR/$filename"
             download_failed=1
         fi
     else
@@ -127,6 +152,13 @@ for url in "${DEB_PACKAGES[@]}"; do
     # Verify that the file exists and is not empty
     if [ ! -s "$CUSTOM_PACKAGES_DIR/$filename" ]; then
         echo "[!] File $filename does not exist or is empty after download."
+        rm -f "$CUSTOM_PACKAGES_DIR/$filename"
+        download_failed=1
+    fi
+    # Verify that the file is a valid .deb package
+    if [ -s "$CUSTOM_PACKAGES_DIR/$filename" ] && ! dpkg-deb --info "$CUSTOM_PACKAGES_DIR/$filename" >/dev/null 2>&1; then
+        echo "[!] File $filename is not a valid .deb package."
+        rm -f "$CUSTOM_PACKAGES_DIR/$filename"
         download_failed=1
     fi
 done
