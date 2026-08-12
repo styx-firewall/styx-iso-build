@@ -2,9 +2,9 @@
 set -e
 
 # Configuration
-STYX_ISO_VER="0.15"
-STYX_BRANCH="styx-dev"
-#STYX_BRANCH="styx-test"
+STYX_ISO_VER="0.16"
+#STYX_BRANCH="styx-dev"
+STYX_BRANCH="styx-test"
 STYX_KERNEL_VER="6.12.95-17-styx_17"
 BASE_ISO="debian-13.4.0-amd64-netinst.iso"
 
@@ -20,16 +20,16 @@ DEB_PACKAGE_FILES=(
 case "$STYX_BRANCH" in
     styx-dev)
         DEB_PACKAGE_FILES+=(
-            "styx-gateway-0.46.22-1.deb"
-            "styx-ui-0.39.13-1.deb"
+            "styx-gateway-0.46.25-1.deb"
+            "styx-ui-0.39.16-1.deb"
             "styx-firewall-0.3-2.deb"
         )
         ;;
     styx-test)
         DEB_PACKAGE_FILES+=(
-            "styx-gateway-0.42.5-1.deb"
-            "styx-ui-0.36.4-1.deb"
-            "styx-firewall-0.3-1.deb"
+            "styx-gateway-0.46.25-1.deb"
+            "styx-ui-0.39.16-1.deb"
+            "styx-firewall-0.3-2.deb"
         )
         ;;
     styx-prod)

@@ -1,5 +1,5 @@
 #!/bin/bash
-# v0.20
+# v0.21
 
 set +e  # Continue on error (do not halt)
 
@@ -508,9 +508,8 @@ mask_if_exists systemd-networkd.service systemd-networkd-wait-online.service
 mask_if_exists NetworkManager.service NetworkManager-wait-online.service
 mask_if_exists nftables.service
 
-# Setup styx es network-online target
+# Remove default debian network-online target
 rm -f /etc/systemd/system/network-online.target.wants/networking.service
-ln -sf /lib/systemd/system/styx-gateway.service /etc/systemd/system/network-online.target.wants/styx-gateway.service
 
 # Lock root account (password was only for automated install)
 passwd -l root
