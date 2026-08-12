@@ -1,14 +1,14 @@
 #!/bin/bash
-# v0.19
+# v0.20
 
 set +e  # Continue on error (do not halt)
 
 echo "Running post-installation script..."
 export DEBIAN_FRONTEND=noninteractive
 
-# ---------------------------------------------------------------------------
+#
 # Capture access_token from kernel cmdline and clean any trace
-# ---------------------------------------------------------------------------
+#
 ACCESS_TOKEN=$(grep -oP 'access_token=\K\S+' /proc/cmdline 2>/dev/null || echo "")
 if [ -n "$ACCESS_TOKEN" ]; then
     # Base64url validation: 32 random bytes → 43 chars (A-Za-z0-9_-)
@@ -22,9 +22,9 @@ else
     echo "No access_token found in kernel cmdline"
 fi
 
-# ---------------------------------------------------------------------------
+#
 # Capture network configuration from the installer for first boot seed
-# ---------------------------------------------------------------------------
+#
 echo "Capturing network configuration..."
 mkdir -p /etc/styx
 chmod 700 /etc/styx
@@ -182,8 +182,8 @@ copy_if_exists "$CFG_DIR/startup-certs.json" /etc/styx/startup-certs.json
 chmod 600 /etc/styx/startup-certs.json
 
 mkdir -p /etc/systemd/system/tmp.mount.d
-copy_if_exists "$CFG_DIR/tmp.conf" /etc/systemd/system/tmp.mount.d/override.conf
-chmod 644 /etc/systemd/system/tmp.mount.d/override.conf
+copy_if_exists "$CFG_DIR/tmp.conf" /etc/systemd/system/tmp.mount.d/tmp-override.conf
+chmod 644 /etc/systemd/system/tmp.mount.d/tmp-override.conf
 
 # Create styx-ui log file
 touch /var/log/styx-ui.log
@@ -237,9 +237,9 @@ else
   echo "Warning: /etc/ssl/local-certs/https-cert.pem not found; skipping chmod"
 fi
 
-# ---------------------------------------------------------------------------
+#
 # Generate a local CA and a server certificate signed by it
-# ---------------------------------------------------------------------------
+#
 echo "Generating local CA and CA-signed server certificate..."
 
 # 1) Generate CA private key
@@ -291,9 +291,9 @@ echo "  -> CA key: /etc/ssl/local-private/ca-key.pem"
 echo "  -> Server cert (CA-signed): /etc/ssl/local-certs/https-server-cert.pem"
 echo "  -> Server key (CA-signed): /etc/ssl/local-private/https-server-key.pem"
 
-# ---------------------------------------------------------------------------
+#
 # Generate two S2S test certificates (signed by the same CA)
-# ---------------------------------------------------------------------------
+#
 echo "Generating S2S test certificates..."
 
 gen_s2s_cert() {
@@ -344,6 +344,21 @@ apt remove --purge -y dhcpcd-base
 apt remove --purge -y linux-image-amd64
 apt remove --purge -y ifupdown
 #apt autoremove --purge -y
+# Overwrite os-release with STYX branding
+cat > /etc/os-release <<'OSRELEASE'
+NAME="Styx Firewall"
+VERSION="__STYX_ISO_VER__"
+ID=styx-firewall
+ID_LIKE=debian
+PRETTY_NAME="Styx Firewall __STYX_ISO_VER__"
+VERSION_ID="__STYX_ISO_VER__"
+HOME_URL="https://github.com/styx-firewall"
+SUPPORT_URL="https://github.com/styx-firewall"
+BUG_REPORT_URL="https://github.com/styx-firewall/issues"
+OSRELEASE
+chmod 644 /etc/os-release
+echo "os-release overwritten with STYX branding (version __STYX_ISO_VER__)"
+
 # Trigger update-grub due to os-release change
 update-grub
 
@@ -374,9 +389,8 @@ EOF
 chmod 644 /etc/systemd/system/styx-resize-vartmp.service
 systemctl enable styx-resize-vartmp.service
 
-# ---------------------------------------------------------------------------
 # Helper: mask a systemd unit only if it exists
-# ---------------------------------------------------------------------------
+
 mask_if_exists() {
   for unit in "$@"; do
     if systemctl list-unit-files "$unit" &>/dev/null; then
@@ -420,10 +434,9 @@ done
 echo "Blacklisted kernel modules: ${BLACKLIST_MODULES[*]}"
 
 
-# ---------------------------------------------------------------------------
 # Journal directory permissions – ensure mode 2750 (owner rwx, group r-x,
 # others ---) so that others cannot read journal logs.
-# ---------------------------------------------------------------------------
+
 
 echo "Hardening journal directory permissions to 2750..."
 
@@ -498,21 +511,6 @@ mask_if_exists nftables.service
 # Setup styx es network-online target
 rm -f /etc/systemd/system/network-online.target.wants/networking.service
 ln -sf /lib/systemd/system/styx-gateway.service /etc/systemd/system/network-online.target.wants/styx-gateway.service
-
-# Overwrite os-release with STYX branding
-cat > /etc/os-release <<'OSRELEASE'
-NAME="Styx Firewall"
-VERSION="__STYX_ISO_VER__"
-ID=styx-firewall
-ID_LIKE=debian
-PRETTY_NAME="Styx Firewall __STYX_ISO_VER__"
-VERSION_ID="__STYX_ISO_VER__"
-HOME_URL="https://github.com/styx-firewall"
-SUPPORT_URL="https://github.com/styx-firewall"
-BUG_REPORT_URL="https://github.com/styx-firewall/issues"
-OSRELEASE
-chmod 644 /etc/os-release
-echo "os-release overwritten with STYX branding (version __STYX_ISO_VER__)"
 
 # Lock root account (password was only for automated install)
 passwd -l root
