@@ -501,6 +501,12 @@ rm -f /var/www/html/index.lighttpd.html
 rm -f /var/log/README
 rmdir /var/log/runit/ssh
 rmdir /var/log/runit
+# Restrict log files
+chmod 750 /var/log/installer
+chmod 640 /var/log/installer/status
+chmod 640 /var/log/installer/lsb-release
+chmod 640 /var/log/installer/firmware-release
+chmod 640 /var/log/installer/hardware-release
 # Disable network managers
 mask_if_exists ifupdown-wait-online.service ifupdown-pre.service ifup@.service
 mask_if_exists networking.service
