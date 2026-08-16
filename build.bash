@@ -2,128 +2,27 @@
 set -e
 
 # Configuration
-STYX_ISO_VER="0.17"
-STYX_BRANCH="styx-dev"
-#STYX_BRANCH="styx-test"
+STYX_ISO_DEV_VER="0.17"
+STYX_ISO_TEST_VER="0.16"
+STYX_ISO_PROD_VER=""
 STYX_KERNEL_VER="6.12.95-17-styx_17"
 BASE_ISO="debian-13.4.0-amd64-netinst.iso"
 
-# List of DEB package filenames (kernel packages are common to all branches)
-DEB_PACKAGE_FILES=(
-    "linux-image-styx_1.6-17_amd64.deb"
-    "linux-headers-styx_1.6-17_amd64.deb"
-    "linux-headers-${STYX_KERNEL_VER}_amd64.deb"
-    "linux-image-${STYX_KERNEL_VER}_amd64.deb"
+# Build matrix: branch -> ISO version (leave the version empty to skip that ISO)
+BRANCHES=(
+    "styx-dev|${STYX_ISO_DEV_VER}"
+    "styx-test|${STYX_ISO_TEST_VER}"
+    "styx-prod|${STYX_ISO_PROD_VER}"
 )
-
-# Branch-specific packages (latest version available in each pool)
-case "$STYX_BRANCH" in
-    styx-dev)
-        DEB_PACKAGE_FILES+=(
-            "styx-gateway-0.46.45-1.deb"
-            "styx-ui-0.39.25-1.deb"
-            "styx-firewall-0.3-3.deb"
-        )
-        ;;
-    styx-test)
-        DEB_PACKAGE_FILES+=(
-            "styx-gateway-0.46.25-1.deb"
-            "styx-ui-0.39.16-1.deb"
-            "styx-firewall-0.3-2.deb"
-        )
-        ;;
-    styx-prod)
-        # No styx-* app packages in the prod pool; they are installed
-        # from the apt repository by styx-postinst.sh
-        ;;
-    *)
-        echo "[!] Unknown STYX_BRANCH: '$STYX_BRANCH' (expected: styx-dev, styx-test or styx-prod)"
-        exit 1
-        ;;
-esac
-
-# --
 
 CUSTOM_PACKAGES_DIR="./packages"
 WORKDIR="./iso_build"
-NEW_ISO="styx-firewall-${STYX_ISO_VER}.iso"
 PRESEED_FILE="./preseed.cfg"
-
-# Base URL for DEB packages
-DEB_BASE_URL="https://github.com/styx-firewall/styx-repo/raw/main/pool/${STYX_BRANCH}/"
-
-# Construct full URLs for DEB packages
-DEB_PACKAGES=()
-for pkg_file in "${DEB_PACKAGE_FILES[@]}"; do
-    DEB_PACKAGES+=("${DEB_BASE_URL}${pkg_file}")
-done
 
 # Preparation
 mkdir -p "$WORKDIR"
-# Clean previous
-rm -rf "$WORKDIR"/iso
-mkdir -p "$WORKDIR/mnt"
-mount -o loop "$BASE_ISO" "$WORKDIR/mnt"
-
-echo "[*] Copying contents of the base ISO..."
-mkdir -p "$WORKDIR/iso"
-rsync -a --exclude=TRANS.TBL "$WORKDIR/mnt/" "$WORKDIR/iso/"
-umount "$WORKDIR/mnt"
-
-# Replace Debian branding with STYX logos
-echo "[*] Replacing Debian branding with STYX..."
-
-if [ -f "resources/logo.png" ]; then
-    PROJECT_DIR="$(pwd)"
-
-    # 1. Replace logo in graphical installer header (inside initrd)
-    echo "  - Extracting initrd (graphical installer)..."
-    INITRD_DIR="$WORKDIR/iso/install.amd/gtk/initrd_dir"
-    mkdir -p "$INITRD_DIR"
-    cd "$INITRD_DIR"
-    zcat ../initrd.gz | cpio -idm 2>/dev/null
-
-    echo "  - Replacing logo files inside initrd..."
-    # logo_debian.png: 800x75, RGB (light theme)
-    convert "$PROJECT_DIR/resources/logo.png" -resize 75x75 -background white -gravity center -extent 800x75 "usr/share/graphics/logo_debian.png"
-    # logo_debian_dark.png: 800x75, RGB (dark theme)
-    convert "$PROJECT_DIR/resources/logo.png" -resize 75x75 -background '#2d2d2d' -gravity center -extent 800x75 "usr/share/graphics/logo_debian_dark.png"
-    # Symbolic links (logo_installer.png -> logo_debian.png) remain intact
-
-    echo "  - Repacking initrd..."
-    find . | cpio -o -H newc 2>/dev/null | gzip -9 > ../initrd.gz
-    cd "$PROJECT_DIR"
-    rm -rf "$INITRD_DIR"
-
-    # 2. Replace loose logos in /pics/ (just in case)
-    convert "$PROJECT_DIR/resources/logo.png" -resize 94x94 -background none -gravity center -extent 211x94 "$WORKDIR/iso/pics/debian-61.png"
-
-    echo "  - STYX logos applied successfully"
-else
-    echo "[!] resources/logo.png not found, skipping logo replacement."
-fi
-
-# Post-Installation Script
-sed -i "s/__STYX_BRANCH__/${STYX_BRANCH}/g" styx-postinst.sh
-sed -i "s/__STYX_ISO_VER__/${STYX_ISO_VER}/g" styx-postinst.sh
-cp styx-postinst.sh "$WORKDIR/iso"
-# Restaurar los placeholders en el fuente
-sed -i "s/${STYX_BRANCH}/__STYX_BRANCH__/g" styx-postinst.sh
-sed -i "s/${STYX_ISO_VER}/__STYX_ISO_VER__/g" styx-postinst.sh
-
-# Copy preseed.cfg
-if [ -f "$PRESEED_FILE" ]; then
-    echo "[*] Copying preseed.cfg..."
-    cp "$PRESEED_FILE" "$WORKDIR/iso/preseed.cfg"
-else
-    echo "[!] preseed.cfg file not found, aborting."
-    exit 1
-fi
-
-# Download DEB packages
-echo "[*] Downloading DEB packages ..."
-
 mkdir -p "$CUSTOM_PACKAGES_DIR"
+
 # To avoid set -e error on timeout
 if ! read -t 7 -p "Clean the custom packages directory ($CUSTOM_PACKAGES_DIR)? [Y/n]: " clean_custom_dir; then
     clean_custom_dir="y"
@@ -135,45 +34,153 @@ if [[ "${clean_custom_dir,,}" =~ ^(y|yes)$ ]]; then
     rm -f "$CUSTOM_PACKAGES_DIR"/*
 fi
 
-# Download and verify each .deb file
-download_failed=0
-for url in "${DEB_PACKAGES[@]}"; do
-    filename=$(basename "$url")
-    if [ ! -f "$CUSTOM_PACKAGES_DIR/$filename" ]; then
-        echo "[*] Downloading $filename ..."
-        if ! wget -O "$CUSTOM_PACKAGES_DIR/$filename" "$url"; then
-            echo "[!] Error downloading $filename"
+build_iso() {
+    local STYX_BRANCH="$1"
+    local STYX_ISO_VER="$2"
+    local NEW_ISO="styx-firewall-${STYX_BRANCH#styx-}-${STYX_ISO_VER}.iso"
+    local DEB_BASE_URL="https://github.com/styx-firewall/styx-repo/raw/main/pool/${STYX_BRANCH}/"
+
+    echo ""
+    echo "=== Building $NEW_ISO (branch: $STYX_BRANCH) ==="
+
+    # List of DEB package filenames (kernel packages are common to all branches)
+    DEB_PACKAGE_FILES=(
+        "linux-image-styx_1.6-17_amd64.deb"
+        "linux-headers-styx_1.6-17_amd64.deb"
+        "linux-headers-${STYX_KERNEL_VER}_amd64.deb"
+        "linux-image-${STYX_KERNEL_VER}_amd64.deb"
+    )
+
+    # Branch-specific packages (latest version available in each pool)
+    case "$STYX_BRANCH" in
+        styx-dev)
+            DEB_PACKAGE_FILES+=(
+                "styx-gateway-0.46.45-1.deb"
+                "styx-ui-0.39.25-1.deb"
+                "styx-firewall-0.3-3.deb"
+            )
+            ;;
+        styx-test)
+            DEB_PACKAGE_FILES+=(
+                "styx-gateway-0.46.25-1.deb"
+                "styx-ui-0.39.16-1.deb"
+                "styx-firewall-0.3-2.deb"
+            )
+            ;;
+        styx-prod)
+            # No styx-* app packages in the prod pool; they are installed
+            # from the apt repository by styx-postinst.sh
+            ;;
+        *)
+            echo "[!] Unknown STYX_BRANCH: '$STYX_BRANCH' (expected: styx-dev, styx-test or styx-prod)"
+            exit 1
+            ;;
+    esac
+
+    # Construct full URLs for DEB packages
+    DEB_PACKAGES=()
+    for pkg_file in "${DEB_PACKAGE_FILES[@]}"; do
+        DEB_PACKAGES+=("${DEB_BASE_URL}${pkg_file}")
+    done
+
+    # Clean previous
+    rm -rf "$WORKDIR"/iso
+    mkdir -p "$WORKDIR/mnt"
+    mount -o loop "$BASE_ISO" "$WORKDIR/mnt"
+
+    echo "[*] Copying contents of the base ISO..."
+    mkdir -p "$WORKDIR/iso"
+    rsync -a --exclude=TRANS.TBL "$WORKDIR/mnt/" "$WORKDIR/iso/"
+    umount "$WORKDIR/mnt"
+
+    # Replace Debian branding with STYX logos
+    echo "[*] Replacing Debian branding with STYX..."
+
+    if [ -f "resources/logo.png" ]; then
+        PROJECT_DIR="$(pwd)"
+
+        # 1. Replace logo in graphical installer header (inside initrd)
+        echo "  - Extracting initrd (graphical installer)..."
+        INITRD_DIR="$WORKDIR/iso/install.amd/gtk/initrd_dir"
+        mkdir -p "$INITRD_DIR"
+        cd "$INITRD_DIR"
+        zcat ../initrd.gz | cpio -idm 2>/dev/null
+
+        echo "  - Replacing logo files inside initrd..."
+        # logo_debian.png: 800x75, RGB (light theme)
+        convert "$PROJECT_DIR/resources/logo.png" -resize 75x75 -background white -gravity center -extent 800x75 "usr/share/graphics/logo_debian.png"
+        # logo_debian_dark.png: 800x75, RGB (dark theme)
+        convert "$PROJECT_DIR/resources/logo.png" -resize 75x75 -background '#2d2d2d' -gravity center -extent 800x75 "usr/share/graphics/logo_debian_dark.png"
+        # Symbolic links (logo_installer.png -> logo_debian.png) remain intact
+
+        echo "  - Repacking initrd..."
+        find . | cpio -o -H newc 2>/dev/null | gzip -9 > ../initrd.gz
+        cd "$PROJECT_DIR"
+        rm -rf "$INITRD_DIR"
+
+        # 2. Replace loose logos in /pics/ (just in case)
+        convert "$PROJECT_DIR/resources/logo.png" -resize 94x94 -background none -gravity center -extent 211x94 "$WORKDIR/iso/pics/debian-61.png"
+
+        echo "  - STYX logos applied successfully"
+    else
+        echo "[!] resources/logo.png not found, skipping logo replacement."
+    fi
+
+    # Post-Installation Script (generate the branch copy without touching the source file)
+    sed -e "s/__STYX_BRANCH__/${STYX_BRANCH}/g" -e "s/__STYX_ISO_VER__/${STYX_ISO_VER}/g" styx-postinst.sh > "$WORKDIR/iso/styx-postinst.sh"
+
+    # Copy preseed.cfg
+    if [ -f "$PRESEED_FILE" ]; then
+        echo "[*] Copying preseed.cfg..."
+        cp "$PRESEED_FILE" "$WORKDIR/iso/preseed.cfg"
+    else
+        echo "[!] preseed.cfg file not found, aborting."
+        exit 1
+    fi
+
+    # Download DEB packages
+    echo "[*] Downloading DEB packages ..."
+
+    # Download and verify each .deb file
+    download_failed=0
+    for url in "${DEB_PACKAGES[@]}"; do
+        filename=$(basename "$url")
+        if [ ! -f "$CUSTOM_PACKAGES_DIR/$filename" ]; then
+            echo "[*] Downloading $filename ..."
+            if ! wget -O "$CUSTOM_PACKAGES_DIR/$filename" "$url"; then
+                echo "[!] Error downloading $filename"
+                rm -f "$CUSTOM_PACKAGES_DIR/$filename"
+                download_failed=1
+            fi
+        else
+            echo "  - $filename already exists, skipping download."
+        fi
+        # Verify that the file exists and is not empty
+        if [ ! -s "$CUSTOM_PACKAGES_DIR/$filename" ]; then
+            echo "[!] File $filename does not exist or is empty after download."
             rm -f "$CUSTOM_PACKAGES_DIR/$filename"
             download_failed=1
         fi
-    else
-        echo "  - $filename already exists, skipping download."
-    fi
-    # Verify that the file exists and is not empty
-    if [ ! -s "$CUSTOM_PACKAGES_DIR/$filename" ]; then
-        echo "[!] File $filename does not exist or is empty after download."
-        rm -f "$CUSTOM_PACKAGES_DIR/$filename"
-        download_failed=1
-    fi
-    # Verify that the file is a valid .deb package
-    if [ -s "$CUSTOM_PACKAGES_DIR/$filename" ] && ! dpkg-deb --info "$CUSTOM_PACKAGES_DIR/$filename" >/dev/null 2>&1; then
-        echo "[!] File $filename is not a valid .deb package."
-        rm -f "$CUSTOM_PACKAGES_DIR/$filename"
-        download_failed=1
-    fi
-done
+        # Verify that the file is a valid .deb package
+        if [ -s "$CUSTOM_PACKAGES_DIR/$filename" ] && ! dpkg-deb --info "$CUSTOM_PACKAGES_DIR/$filename" >/dev/null 2>&1; then
+            echo "[!] File $filename is not a valid .deb package."
+            rm -f "$CUSTOM_PACKAGES_DIR/$filename"
+            download_failed=1
+        fi
+    done
 
-# If any download failed, abort the script
-if [ "$download_failed" -ne 0 ]; then
-    echo "[!] One or more .deb package downloads failed. Aborting."
-    exit 1
-fi
+    # If any download failed, abort the script
+    if [ "$download_failed" -ne 0 ]; then
+        echo "[!] One or more .deb package downloads failed. Aborting."
+        exit 1
+    fi
 
-# Add custom packages (.deb)
-if compgen -G "$CUSTOM_PACKAGES_DIR/*.deb" > /dev/null; then
+    # Add custom packages (.deb) for this branch only
     echo "[*] Adding custom packages..."
     mkdir -p "$WORKDIR/iso/pool/extras"
-    cp "$CUSTOM_PACKAGES_DIR"/*.deb "$WORKDIR/iso/pool/extras/"
+    for pkg_file in "${DEB_PACKAGE_FILES[@]}"; do
+        cp "$CUSTOM_PACKAGES_DIR/$pkg_file" "$WORKDIR/iso/pool/extras/"
+    done
 
     # Copy override file to suppress dpkg-scanpackages warnings
     if [ -f "packages-override" ]; then
@@ -185,20 +192,17 @@ if compgen -G "$CUSTOM_PACKAGES_DIR/*.deb" > /dev/null; then
     cd "$WORKDIR/iso"
     dpkg-scanpackages pool/extras pool/extras/packages-override | gzip -9 > dists/stable/extras/binary-amd64/Packages.gz
     cd - > /dev/null
-else
-    echo "[!] No custom .deb packages found in $CUSTOM_PACKAGES_DIR"
-fi
 
-# Modify boot menu (isolinux)
-TXT_CFG="$WORKDIR/iso/isolinux/txt.cfg"
-if grep -q "label install" "$TXT_CFG"; then
-    echo "[*] Modifying boot menu to use preseed.cfg..."
-    sed -i '/^label install/,/^$/s@^\( *append \).*@\1auto=true priority=critical preseed/file=/cdrom/preseed.cfg initrd=/install.amd/initrd.gz ---@' "$TXT_CFG"
-else
-    echo "[!] 'label install' entry not found in txt.cfg. Please modify it manually."
-fi
+    # Modify boot menu (isolinux)
+    TXT_CFG="$WORKDIR/iso/isolinux/txt.cfg"
+    if grep -q "label install" "$TXT_CFG"; then
+        echo "[*] Modifying boot menu to use preseed.cfg..."
+        sed -i '/^label install/,/^$/s@^\( *append \).*@\1auto=true priority=critical preseed/file=/cdrom/preseed.cfg initrd=/install.amd/initrd.gz ---@' "$TXT_CFG"
+    else
+        echo "[!] 'label install' entry not found in txt.cfg. Please modify it manually."
+    fi
 
-cat > $WORKDIR/iso/isolinux/isolinux.cfg <<EOF
+    cat > $WORKDIR/iso/isolinux/isolinux.cfg <<EOF
 default auto-install-styx
 timeout 5
 prompt 0
@@ -210,8 +214,8 @@ label auto-install-styx
   append auto=true priority=high vga=788 initrd=/install.amd/initrd.gz preseed/file=/cdrom/preseed.cfg --- quiet
 EOF
 
-# 5. Modify graphical menu (UEFI)
-cat > $WORKDIR/iso/boot/grub/grub.cfg <<'EOF'
+    # 5. Modify graphical menu (UEFI)
+    cat > $WORKDIR/iso/boot/grub/grub.cfg <<'EOF'
 if [ x$feature_default_font_path = xy ] ; then
    font=unicode
 else
@@ -268,31 +272,46 @@ menuentry --hotkey=r 'Rescue mode' {
 
 EOF
 
-# Cleaning ISO
-rm -rf "$WORKDIR/iso/doc"
-rm -rf "$WORKDIR/pool/main/f/fonts-noto*"
-rm -rf "$WORKDIR/non-free-firmware/n/nvidia-graphics-drivers-tesla-*"
-rm -rf "$WORKDIR/pool/main/x/xserver-xorg*"
-rm -rf "$WORKDIR/pool/main/l/linux-signed-amd64/linux-*"
+    # Cleaning ISO
+    rm -rf "$WORKDIR/iso/doc"
+    rm -rf "$WORKDIR/pool/main/f/fonts-noto*"
+    rm -rf "$WORKDIR/non-free-firmware/n/nvidia-graphics-drivers-tesla-*"
+    rm -rf "$WORKDIR/pool/main/x/xserver-xorg*"
+    rm -rf "$WORKDIR/pool/main/l/linux-signed-amd64/linux-*"
 
-# Create new hybrid ISO
-echo "[*] Creating new final ISO..."
+    # Create new hybrid ISO
+    echo "[*] Creating new final ISO..."
 
-xorriso -as mkisofs \
-  -r -V "STYX NetInst" \
-  -o "$NEW_ISO" \
-  -J -joliet-long \
-  -b isolinux/isolinux.bin \
-  -c isolinux/boot.cat \
-  -no-emul-boot \
-  -boot-load-size 4 \
-  -boot-info-table \
-  -eltorito-alt-boot \
-  -e boot/grub/efi.img \
-  -no-emul-boot \
-  -isohybrid-gpt-basdat \
-  "$WORKDIR/iso"
+    xorriso -as mkisofs \
+      -r -V "STYX NetInst" \
+      -o "$NEW_ISO" \
+      -J -joliet-long \
+      -b isolinux/isolinux.bin \
+      -c isolinux/boot.cat \
+      -no-emul-boot \
+      -boot-load-size 4 \
+      -boot-info-table \
+      -eltorito-alt-boot \
+      -e boot/grub/efi.img \
+      -no-emul-boot \
+      -isohybrid-gpt-basdat \
+      "$WORKDIR/iso"
 
-echo "[+] ISO generated: $NEW_ISO"
-mv "$NEW_ISO" /var/www/html/
-echo "http://192.168.2.154/${NEW_ISO}"
+    echo "[+] ISO generated: $NEW_ISO"
+    mv "$NEW_ISO" /var/www/html/
+    echo "http://192.168.2.154/${NEW_ISO}"
+}
+
+# Build one ISO per branch (skipped when its version is empty)
+for entry in "${BRANCHES[@]}"; do
+    branch="${entry%%|*}"
+    ver="${entry#*|}"
+    if [ -z "$ver" ]; then
+        echo "[!] STYX_ISO_$(echo "${branch#styx-}" | tr '[:lower:]' '[:upper:]')_VER is empty -> skipping ISO build for $branch."
+        continue
+    fi
+    build_iso "$branch" "$ver"
+done
+
+echo ""
+echo "[+] All requested ISOs built."
