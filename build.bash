@@ -55,9 +55,9 @@ build_iso() {
     case "$STYX_BRANCH" in
         styx-dev)
             DEB_PACKAGE_FILES+=(
-                "styx-gateway-0.46.45-1.deb"
-                "styx-ui-0.39.25-1.deb"
-                "styx-firewall-0.3-3.deb"
+                "styx-gateway-0.46.49-1.deb"
+                "styx-ui-0.39.27-1.deb"
+                "styx-firewall-0.3-4.deb"
             )
             ;;
         styx-test)
